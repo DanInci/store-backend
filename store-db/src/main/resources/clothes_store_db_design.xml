@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?><Db flnm="store" nm="store" ver="1.3.4">
+  <VerLbl/>
+  <VerNotes/>
+  <DefTblOpts/>
+  <DocFolder>/Users/dani</DocFolder>
+  <Sch Cm="" nm="schemaA">
+    <Tbl UsSo="1" nm="buyer">
+      <TblOpts/>
+      <Pk ClNs="buyer_id" nm="pkbuyer"/>
+      <Cl au="1" df="" nm="buyer_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="email" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="100" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="false" nm="subscribed" nu="0">
+        <DT arr="0" ds="Boolean" en="" id="16" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="firstname" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="30" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="lastname" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="30" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="address" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="255" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="city" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="country" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="county" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="phone_number" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="category">
+      <TblOpts/>
+      <Pk ClNs="category_id" nm="pkcategory"/>
+      <Cl au="1" df="" nm="category_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="name" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="100" sc="null" sg="1" un="0"/>
+      </Cl>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="media_file">
+      <TblOpts/>
+      <Cl au="0" df="" nm="p_product_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="name" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="100" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="file_path" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="200" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Fk deAc="3" nm="fk_media_file_product" prLkCl="product_id" upAc="3">
+        <PrTb mn="0" nm="product" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="media_file" oe="0" sch="schemaA" zr="1"/>
+        <ClPr cdCl="p_product_id" prCl="product_id"/>
+      </Fk>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="order">
+      <TblOpts/>
+      <Pk ClNs="order_id" nm="pkorder"/>
+      <Cl au="1" df="" nm="order_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="b_buyer_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="sm_shipping_method_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_firstname" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="30" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_lastname" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="30" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_address" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="255" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_city" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_country" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_county" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_postal_code" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="billing_phone_number" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="50" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Fk deAc="3" nm="fk_order_buyer" prLkCl="buyer_id" upAc="3">
+        <PrTb mn="0" nm="buyer" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="order" oe="1" sch="schemaA" zr="0"/>
+        <ClPr cdCl="b_buyer_id" prCl="buyer_id"/>
+      </Fk>
+      <Fk deAc="3" nm="fk_order_shipping_method" prLkCl="shipping_method_id" upAc="3">
+        <PrTb mn="0" nm="shipping_method" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="order" oe="1" sch="schemaA" zr="0"/>
+        <ClPr cdCl="sm_shipping_method_id" prCl="shipping_method_id"/>
+      </Fk>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="ordered_product">
+      <TblOpts/>
+      <Pk ClNs="ordered_product_id" nm="pkordered_product"/>
+      <Cl au="1" df="" nm="ordered_product_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="p_product_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="o_order_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="size" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="3" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="count" nu="0">
+        <DT arr="0" ds="Integer" en="" id="4" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Fk deAc="3" nm="fk_ordered_product_order" prLkCl="order_id" upAc="3">
+        <PrTb mn="0" nm="order" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="ordered_product" oe="1" sch="schemaA" zr="0"/>
+        <ClPr cdCl="o_order_id" prCl="order_id"/>
+      </Fk>
+      <Fk deAc="3" nm="fk_ordered_product_product" prLkCl="product_id" upAc="3">
+        <PrTb mn="0" nm="product" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="ordered_product" oe="1" sch="schemaA" zr="0"/>
+        <ClPr cdCl="p_product_id" prCl="product_id"/>
+      </Fk>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="product">
+      <TblOpts/>
+      <Pk ClNs="product_id" nm="pkproduct"/>
+      <Cl au="1" df="" nm="product_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="c_category_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="price" nu="0">
+        <DT arr="0" ds="Double" en="" id="8" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="discount" nu="1">
+        <DT arr="0" ds="Double" en="" id="8" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="false" nm="availability_on_command" nu="0">
+        <DT arr="0" ds="Boolean" en="" id="16" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="description" nu="0">
+        <DT arr="1" ds="VarChar" en="" id="12" ln="255" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="care" nu="0">
+        <DT arr="1" ds="VarChar" en="" id="12" ln="255" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Fk deAc="3" nm="fk_product_category" prLkCl="category_id" upAc="3">
+        <PrTb mn="0" nm="category" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="product" oe="1" sch="schemaA" zr="0"/>
+        <ClPr cdCl="c_category_id" prCl="category_id"/>
+      </Fk>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="shipping_method">
+      <TblOpts/>
+      <Pk ClNs="shipping_method_id" nm="pkshipping_method"/>
+      <Cl au="1" df="" nm="shipping_method_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="name" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="100" sc="null" sg="1" un="0"/>
+      </Cl>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="size">
+      <TblOpts/>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <Tbl UsSo="1" nm="stock">
+      <TblOpts/>
+      <Cl au="0" df="" nm="p_product_id" nu="0">
+        <DT arr="0" ds="UniqueID" en="" id="704" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="size" nu="0">
+        <DT arr="0" ds="VarChar" en="" id="12" ln="3" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Cl au="0" df="" nm="count" nu="0">
+        <DT arr="0" ds="Integer" en="" id="4" ln="null" sc="null" sg="1" un="0"/>
+      </Cl>
+      <Fk deAc="3" nm="fk_stock_product" prLkCl="product_id" upAc="3">
+        <PrTb mn="0" nm="product" oe="1" sch="schemaA" zr="0"/>
+        <CdTb mn="1" nm="stock" oe="1" sch="schemaA" zr="0"/>
+        <ClPr cdCl="p_product_id" prCl="product_id"/>
+      </Fk>
+      <UniqueConstraints/>
+      <SchTrHis/>
+    </Tbl>
+    <CustomTypes/>
+  </Sch>
+  <Dgm nm="diagramA">
+    <RnCf ClkAct="true" FtSz="11" lkStgy="RightAngleStrategy" zm="1.0">
+      <VbCfg>
+        <Fg ky="Auto Number" vl="0"/>
+        <Fg ky="Check" vl="0"/>
+        <Fg ky="Comment" vl="0"/>
+        <Fg ky="Data Type" vl="1"/>
+        <Fg ky="Default" vl="0"/>
+        <Fg ky="ENUM Values" vl="0"/>
+        <Fg ky="Length" vl="1"/>
+        <Fg ky="Name" vl="1"/>
+        <Fg ky="Nullable" vl="0"/>
+        <Fg ky="Schema Name" vl="0"/>
+        <Fg ky="Signed" vl="0"/>
+      </VbCfg>
+    </RnCf>
+    <DiaProps>
+      <Show AllCols="1" FkCols="1" FkNms="1" PkCols="1"/>
+      <ErNotation>BarkerErNotation</ErNotation>
+      <DbTableRectangleFill>HeaderFooterFill</DbTableRectangleFill>
+      <svg path=""/>
+    </DiaProps>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="product" x="368" y="129"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="category" x="63" y="62"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="media_file" x="64" y="184"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="stock" x="412" y="338"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="buyer" x="1017" y="1"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="shipping_method" x="1326" y="50"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="order" x="989" y="283"/>
+    <TbGl bkCl="ff6666ff" sch="schemaA" tbl="ordered_product" x="698" y="262"/>
+    <FkGl bkCl="ff000000" childEdge="NORTH" nm="schemaA.media_file.fk_media_file_product" parentEdge="WEST" positioner="TwoLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="PARENT_LINE" x1="368" x2="185" y1="151" y2="151"/>
+        <positionableLine lineRole="CHILD_LINE" x1="181" x2="181" y1="184" y2="155"/>
+      </positionableLines>
+    </FkGl>
+    <FkGl bkCl="ff000000" childEdge="NORTH" nm="schemaA.order.fk_order_buyer" parentEdge="SOUTH" positioner="OneLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="SINGLE_LINE" x1="1126" x2="1126" y1="158" y2="283"/>
+      </positionableLines>
+    </FkGl>
+    <FkGl bkCl="ff000000" childEdge="EAST" nm="schemaA.order.fk_order_shipping_method" parentEdge="SOUTH" positioner="TwoLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="PARENT_LINE" x1="1443" x2="1443" y1="103" y2="330"/>
+        <positionableLine lineRole="CHILD_LINE" x1="1286" x2="1439" y1="334" y2="334"/>
+      </positionableLines>
+    </FkGl>
+    <FkGl bkCl="ff000000" childEdge="SOUTH" nm="schemaA.ordered_product.fk_ordered_product_order" parentEdge="WEST" positioner="TwoLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="PARENT_LINE" x1="989" x2="828" y1="418" y2="418"/>
+        <positionableLine lineRole="CHILD_LINE" x1="824" x2="824" y1="354" y2="414"/>
+      </positionableLines>
+    </FkGl>
+    <FkGl bkCl="ff000000" childEdge="NORTH" nm="schemaA.ordered_product.fk_ordered_product_product" parentEdge="EAST" positioner="TwoLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="PARENT_LINE" x1="686" x2="817" y1="205" y2="205"/>
+        <positionableLine lineRole="CHILD_LINE" x1="821" x2="821" y1="262" y2="209"/>
+      </positionableLines>
+    </FkGl>
+    <FkGl bkCl="ff000000" childEdge="NORTH" nm="schemaA.product.fk_product_category" parentEdge="EAST" positioner="TwoLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="PARENT_LINE" x1="289" x2="509" y1="88" y2="88"/>
+        <positionableLine lineRole="CHILD_LINE" x1="513" x2="513" y1="129" y2="92"/>
+      </positionableLines>
+    </FkGl>
+    <FkGl bkCl="ff000000" childEdge="NORTH" nm="schemaA.stock.fk_stock_product" parentEdge="SOUTH" positioner="OneLineUserLinkPositioner">
+      <positionableLines>
+        <positionableLine lineRole="SINGLE_LINE" x1="511" x2="511" y1="247" y2="338"/>
+      </positionableLines>
+    </FkGl>
+    <Notes/>
+    <Zones/>
+  </Dgm>
+  <RnmMgr NxRnmId="3">
+    <RnmCh ObjCls="Column" ParCls="Table" ParNme="media_file" SupCls="Schema" SupNme="schemaA">
+      <Rnm id="1" nNm="file_path" oNm="path"/>
+    </RnmCh>
+    <RnmCh ObjCls="Column" ParCls="Table" ParNme="product" SupCls="Schema" SupNme="schemaA">
+      <Rnm id="2" nNm="availability_on_command" oNm="availability_on_comnabd"/>
+    </RnmCh>
+  </RnmMgr>
+  <DbDocOptionMgr>
+    <BasicOptionMgr>
+      <Name>db.doc.option.mgr</Name>
+      <BoolOpt lbl="Diagrams" nm="doc.diagrams" on="1" spl="0"/>
+      <BoolOpt lbl="Foreign Keys" nm="doc.fks" on="1" spl="0"/>
+      <BoolOpt lbl="Indexes" nm="doc.indexes" on="1" spl="0"/>
+      <BoolOpt lbl="Overwrite CSS File" nm="doc.overwrite.css" on="1" spl="0"/>
+      <BoolOpt lbl="Procedures" nm="doc.procs" on="1" spl="0"/>
+      <BoolOpt lbl="Schemas" nm="doc.schemas" on="1" spl="0"/>
+      <BoolOpt lbl="Sequences" nm="doc.sequences" on="1" spl="0"/>
+      <BoolOpt lbl="Tables" nm="doc.tables" on="1" spl="0"/>
+      <BoolOpt lbl="Triggers" nm="doc.triggers" on="1" spl="0"/>
+      <BoolOpt lbl="Views" nm="doc.views" on="1" spl="0"/>
+    </BasicOptionMgr>
+  </DbDocOptionMgr>
+  <OpenEditors>
+    <OpenEditor ClsNm="Diagram" fqn="null.diagramA" selected="0"/>
+  </OpenEditors>
+  <TreePaths>
+    <TreePath/>
+    <TreePath>/Schemas (1)</TreePath>
+    <TreePath>/Diagrams (1)</TreePath>
+  </TreePaths>
+  <SqlTexts/>
+</Db>
