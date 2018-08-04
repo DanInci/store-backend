@@ -11,11 +11,11 @@ lazy val `store-server` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
   .settings(
-    mainClass := Option("store.server.ServerApp")
+    mainClass := Option("store.server.StoreServerApp")
   )
   .aggregate(
-    `organizer-order`,
-    `organizer-product`,
+    `service-order`,
+    `service-product`,
     `store-config`,
     `store-db`,
     `store-json`,
@@ -23,8 +23,8 @@ lazy val `store-server` = project
     `store-effects`
   )
   .dependsOn(
-    `organizer-order`,
-    `organizer-product`,
+    `service-order`,
+    `service-product`,
     `store-config`,
     `store-db`,
     `store-json`,
@@ -32,7 +32,7 @@ lazy val `store-server` = project
     `store-effects`
   )
 
-lazy val `organizer-order` = project
+lazy val `service-order` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
   .aggregate(
@@ -52,7 +52,7 @@ lazy val `organizer-order` = project
     `store-effects`
   )
 
-lazy val `organizer-product` = project
+lazy val `service-product` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
   .aggregate(
@@ -179,6 +179,7 @@ def commonSettings: Seq[Setting[_]] = Seq(
     //http4s
     http4sBlazeServer,
     http4sCirce,
+    http4sDSL,
     //doobie
     doobieHikari,
     doobiePostgres,
