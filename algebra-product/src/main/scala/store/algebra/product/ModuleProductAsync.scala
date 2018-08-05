@@ -18,8 +18,6 @@ trait ModuleProductAsync[F[_]] {
 
   def productAlgebra: ProductAlgebra[F] = _moduleAlgebra
 
-  def productModuleAlgebra: ProductAlgebra[F] = _moduleAlgebra
-
   private lazy val _moduleAlgebra: ProductAlgebra[F] = new impl.AsyncAlgebraImpl[F]()
 
 }

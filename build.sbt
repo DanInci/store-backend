@@ -195,6 +195,7 @@ def commonSettings: Seq[Setting[_]] = Seq(
     attoParser,
     pureConfig,
     spire,
+    betterFiles
   ),
   /*
    * Eliminates useless, unintuitive, and sometimes broken additions of `withFilter`
@@ -394,3 +395,6 @@ lazy val pureConfig: ModuleID = "com.github.pureconfig" %% "pureconfig" % "0.9.1
 
 //https://github.com/ChristopherDavenport/linebacker
 lazy val linebacker: ModuleID = "io.chrisdavenport" % "linebacker_2.12" % "0.1.0" withSources()
+
+//https://github.com/pathikrit/better-files
+lazy val betterFiles: ModuleID = "com.github.pathikrit" %% "better-files" % "3.6.0" withSources()

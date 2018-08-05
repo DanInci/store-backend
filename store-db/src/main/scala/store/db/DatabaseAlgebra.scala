@@ -8,7 +8,7 @@ import store.effects._
   */
 trait DatabaseAlgebra[F[_]] {
 
-  def shift[M](thunk: => F[M])(implicit F: Async[F], dbContext: DatabaseContext[F]): F[M] = {
+  protected def shift[M](thunk: => F[M])(implicit F: Async[F], dbContext: DatabaseContext[F]): F[M] = {
     dbContext.block(thunk)
   }
 

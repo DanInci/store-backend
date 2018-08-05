@@ -7,6 +7,7 @@ import store.db.config._
 import store.db._
 import doobie.util.transactor.Transactor
 import monix.execution.Scheduler
+import store.algebra.files.{FilesAlgebraConfig, FilesContext}
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -22,16 +23,19 @@ class StoreServer[F[_]: Concurrent] private (
     for {
       serverConfig <- Stream.eval(StoreServerConfig.default[F])
       dbConfig     <- Stream.eval(DatabaseConfig.default[F])
+      filesConfig  <- Stream.eval(FilesAlgebraConfig.default[F])
       transactor   <- Stream.eval(DatabaseConfigAlgebra.transactor[F](dbConfig))
       nrOfMigs     <- Stream.eval(DatabaseConfigAlgebra.initializeSQLDb[F](dbConfig))
       _            <- Stream.eval(logger.info(s"Successfully ran $nrOfMigs migration(s)"))
       dbContext    <- DatabaseContext.create[F](dbConfig.connectionPoolSize)
-      storeModule  <- Stream.eval(moduleInit(transactor, dbContext))
-      _            <- Stream.eval(logger.info("Successfully initialized dixit-server"))
+      filesContext <- FilesContext.create[F]
+      storeModule  <- Stream.eval(moduleInit(transactor, dbContext, filesConfig,filesContext))
+      _            <- Stream.eval(logger.info("Successfully initialized store-server"))
+      _            <- Stream.eval(logger.info(s"Started server on ${serverConfig.host}:${serverConfig.port}"))
     } yield (serverConfig, storeModule)
 
-  private def moduleInit(transactor: Transactor[F], dbContext: DatabaseContext[F]): F[ModuleStoreServer[F]] =
-    Concurrent.apply[F].delay(ModuleStoreServer.concurrent(implicitly, transactor, dbContext))
+  private def moduleInit(transactor: Transactor[F], dbContext: DatabaseContext[F], filesConfig: FilesAlgebraConfig, filesContext: FilesContext[F]): F[ModuleStoreServer[F]] =
+    Concurrent.apply[F].delay(ModuleStoreServer.concurrent(filesConfig)(implicitly, transactor, dbContext, filesContext))
 
 }
 
