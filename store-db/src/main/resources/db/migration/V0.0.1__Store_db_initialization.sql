@@ -119,6 +119,7 @@ CREATE TABLE "product"
 (
 	product_id OID DEFAULT nextval('product_product_id_seq'::regclass) NOT NULL,
 	c_category_id OID NOT NULL,
+	name VARCHAR(100) NOT NULL,
 	price DOUBLE PRECISION NOT NULL,
 	discount DOUBLE PRECISION NULL,
 	availability_on_command BOOL DEFAULT false NOT NULL,

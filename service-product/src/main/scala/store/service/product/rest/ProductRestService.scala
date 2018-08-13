@@ -1,46 +1,72 @@
 package store.service.product.rest
 
+import busymachines.core.NotFoundFailure
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
-import store.algebra.files.FilesAlgebra
-import store.algebra.product.ProductAlgebra
-import store.core.ProductID
+import store.algebra.product._
 import store.effects._
-import store.json._
 import store.algebra.product.entity.StoreProduct
+import store.core._
+import store.core.entity.PagingInfo
+import store.http._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 04/08/2018
   */
-final class ProductRestService[F[_]: Async](
-    productAlgebra: ProductAlgebra[F],
-    filesAlgebra: FilesAlgebra[F]
-) extends Http4sDsl[F] with ProductServiceJSON {
+final class ProductRestService[F[_]](
+    productAlgebra: ProductAlgebra[F]
+)(
+    implicit F: Async[F]
+) extends Http4sDsl[F]
+    with ErrorHandlingInstances[F]
+    with ProductServiceJSON {
 
-  private val productService: HttpService[F] = HttpService[F] {
-    case GET -> Root / "product" / LongVar(productId) / "images"  =>
-     for {
-       images <- filesAlgebra.retrieveImagesForProduct(ProductID(productId))
-       resp <- Ok(images)
-     } yield resp
-    case req @ POST -> Root / "product" =>
+  private object ProductNameMatcher
+      extends OptionalQueryParamDecoderMatcher[String]("name")
+  private object ProductCategoryMatcher
+      extends OptionalMultiQueryParamDecoderMatcher[CategoryID]("c")
+  private object PageOffsetMatcher
+      extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
+  private object PageLimitMatcher
+      extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
+
+  private val productService: HttpService[F] = HttpServiceWithErrorHandling[F] {
+    case GET -> Root / "product" / LongVar(productId) =>
       for {
-        product <- req.as[StoreProduct]
-        _ <- filesAlgebra.saveImagesForProduct(ProductID(product.productId), product.images)
-        resp <- Created(product)
+        product <- productAlgebra.getProduct(ProductID(productId)).flatMap {
+          case Some(p) => F.pure[StoreProduct](p)
+          case None =>
+            F.raiseError[StoreProduct](
+              NotFoundFailure(s"Product with $productId was not found"))
+        }
+        resp <- Ok(product)
+      } yield resp
+
+    case GET -> Root / "product" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
+          categories) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
+      for {
+        products <- productAlgebra.getProducts(
+          name,
+          categories.toOption.getOrElse(Nil),
+          PagingInfo(offset, limit))
+        resp <- Ok(products)
+      } yield resp
+
+    case request @ POST -> Root / "product" =>
+      for {
+        product <- request.as[StoreProduct]
+        productId <- productAlgebra.createProduct(product)
+        resp <- Created(productId)
+      } yield resp
+
+    case DELETE -> Root / "product" / LongVar(productId) =>
+      for {
+        _ <- productAlgebra.removeProduct(ProductID(productId))
+        resp <- Ok()
       } yield resp
   }
 
-  private val helloService: HttpService[F] = HttpService[F] {
-    case GET -> Root / "hello" => Ok()
-  }
-
-  val service: HttpService[F] = {
-    NonEmptyList.of(
-      productService,
-      helloService
-    ).reduceK
-  }
+  val service: HttpService[F] = productService
 }

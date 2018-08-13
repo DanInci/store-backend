@@ -4,7 +4,11 @@ import cats.data.NonEmptyList
 import cats.effect.Concurrent
 import doobie.util.transactor.Transactor
 import org.http4s.HttpService
-import store.algebra.files.{FilesAlgebra, FilesAlgebraConfig, FilesContext, ModuleFilesAsync}
+import store.algebra.content.{
+  FileStorageConfig,
+  ContentContext,
+  ModuleContentAsync
+}
 import store.algebra.product.ModuleProductAsync
 import store.db.DatabaseContext
 import store.effects.Async
@@ -14,7 +18,10 @@ import store.service.product.ModuleProductServiceAsync
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 04/08/2018
   */
-trait ModuleStoreServer[F[_]] extends ModuleProductServiceAsync[F] with ModuleProductAsync[F] with ModuleFilesAsync[F] {
+trait ModuleStoreServer[F[_]]
+    extends ModuleProductServiceAsync[F]
+    with ModuleProductAsync[F]
+    with ModuleContentAsync[F] {
 
   override implicit def async: Async[F]
 
@@ -22,15 +29,16 @@ trait ModuleStoreServer[F[_]] extends ModuleProductServiceAsync[F] with ModulePr
 
   override implicit def dbContext: DatabaseContext[F]
 
-  override implicit def filesContext: FilesContext[F]
+  override implicit def contentContext: ContentContext[F]
 
-  override def filesConfig: FilesAlgebraConfig
+  override def fileStorageConfig: FileStorageConfig
 
   def storeServerService: HttpService[F] = {
     import cats.implicits._
     NonEmptyList
       .of(
-        productRestService.service
+        productRestService.service,
+        stockRestService.service
       )
       .reduceK
   }
@@ -39,7 +47,11 @@ trait ModuleStoreServer[F[_]] extends ModuleProductServiceAsync[F] with ModulePr
 
 object ModuleStoreServer {
 
-  def concurrent[F[_]](filesConfig: FilesAlgebraConfig)(implicit c: Concurrent[F], t: Transactor[F], dbc: DatabaseContext[F], fc: FilesContext[F]): ModuleStoreServer[F] =
+  def concurrent[F[_]](filesConfig: FileStorageConfig)(
+      implicit c: Concurrent[F],
+      t: Transactor[F],
+      dbc: DatabaseContext[F],
+      cc: ContentContext[F]): ModuleStoreServer[F] =
     new ModuleStoreServer[F] {
       override implicit def async: Async[F] = c
 
@@ -47,9 +59,9 @@ object ModuleStoreServer {
 
       override implicit def dbContext: DatabaseContext[F] = dbc
 
-      override implicit def filesContext: FilesContext[F] = fc
+      override implicit def contentContext: ContentContext[F] = cc
 
-      override def filesConfig: FilesAlgebraConfig = filesConfig
+      override def fileStorageConfig: FileStorageConfig = filesConfig
     }
 
 }

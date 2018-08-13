@@ -1,7 +1,8 @@
 package store.algebra.product.entity
 
-import store.algebra.files.entity.ImageFile
-import store.core.ProductID
+import store.algebra.product._
+import store.algebra.product.entity.component._
+import store.core._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -9,5 +10,12 @@ import store.core.ProductID
   */
 final case class StoreProduct(
     productId: ProductID,
-    images: List[ImageFile]
-)
+    categoryId: CategoryID,
+    name: String,
+    images: List[ImageFile],
+    stocks: List[Stock],
+    discount: Discount,
+    isAvailableOnCommand: Boolean,
+    description: List[DescParagraph],
+    care: List[CareParagraph]
+) extends Serializable

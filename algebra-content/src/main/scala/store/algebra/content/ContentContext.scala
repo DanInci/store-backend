@@ -1,4 +1,4 @@
-package store.algebra.files
+package store.algebra.content
 
 import fs2.Stream
 import io.chrisdavenport.linebacker.DualContext
@@ -11,15 +11,15 @@ import scala.concurrent.ExecutionContext
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 05/08/2018
   */
-trait FilesContext[F[_]] extends DualContext[F]
+trait ContentContext[F[_]] extends DualContext[F]
 
-object FilesContext {
+object ContentContext {
 
-  def create[F[_]: Sync: Async](implicit ec: ExecutionContext): Stream[F, FilesContext[F]] =
+  def create[F[_]: Sync: Async](implicit ec: ExecutionContext): Stream[F, ContentContext[F]] =
     Executors
       .unbound[F]
       .map(blockingExecutor =>
-        new FilesContext[F] {
+        new ContentContext[F] {
           override def blockingContext: ExecutionContext = ec
 
           override def defaultContext: ExecutionContext = ExecutionContext.fromExecutorService(blockingExecutor)

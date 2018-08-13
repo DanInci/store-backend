@@ -19,6 +19,7 @@ lazy val `store-server` = project
     `store-config`,
     `store-db`,
     `store-json`,
+    `store-http`,
     `store-core`,
     `store-effects`
   )
@@ -28,6 +29,7 @@ lazy val `store-server` = project
     `store-config`,
     `store-db`,
     `store-json`,
+    `store-http`,
     `store-core`,
     `store-effects`
   )
@@ -40,6 +42,7 @@ lazy val `service-order` = project
     `store-config`,
     `store-db`,
     `store-json`,
+    `store-http`,
     `store-core`,
     `store-effects`
   )
@@ -48,6 +51,7 @@ lazy val `service-order` = project
     `store-config`,
     `store-db`,
     `store-json`,
+    `store-http`,
     `store-core`,
     `store-effects`
   )
@@ -60,6 +64,7 @@ lazy val `service-product` = project
     `store-config`,
     `store-db`,
     `store-json`,
+    `store-http`,
     `store-core`,
     `store-effects`
   )
@@ -68,6 +73,7 @@ lazy val `service-product` = project
     `store-config`,
     `store-db`,
     `store-json`,
+    `store-http`,
     `store-core`,
     `store-effects`
   )
@@ -94,29 +100,31 @@ lazy val `algebra-product` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
   .aggregate(
-    `algebra-files`,
+    `algebra-content`,
     `store-config`,
     `store-db`,
     `store-core`,
     `store-effects`
   )
   .dependsOn(
-    `algebra-files`,
+    `algebra-content`,
     `store-config`,
     `store-db`,
     `store-core`,
     `store-effects`
   )
 
-lazy val `algebra-files` = project
+lazy val `algebra-content` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
   .aggregate(
+    `store-db`,
     `store-config`,
     `store-core`,
     `store-effects`
   )
   .dependsOn(
+    `store-db`,
     `store-config`,
     `store-core`,
     `store-effects`
@@ -129,6 +137,15 @@ lazy val `store-db` = project
     `store-config`,
     `store-core`,
     `store-effects`
+  )
+
+lazy val `store-http` = project
+  .settings(commonSettings)
+  .settings(sbtAssemblySettings)
+  .dependsOn(
+    `store-json`,
+    `store-core`,
+    `store-effects`,
   )
 
 lazy val `store-json` = project
@@ -153,7 +170,6 @@ lazy val `store-config` = project
     `store-effects`
   )
 
-
 lazy val `store-effects` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
@@ -166,16 +182,21 @@ lazy val `store-effects` = project
 def commonSettings: Seq[Setting[_]] = Seq(
   scalaVersion := "2.12.6",
   libraryDependencies ++= Seq(
+    //utils
+    bmcCore,
+    bmcDuration,
     linebacker,
     //effects + streams
     catsCore,
     catsEffect,
     monix,
     fs2,
+    bmcEffects,
     //JSON stuff
     circeCore,
     circeGeneric,
     circeGenericExtras,
+    bmcJson,
     //http4s
     http4sBlazeServer,
     http4sCirce,
@@ -312,6 +333,22 @@ def customScalaCompileFlags: Seq[String] = Seq(
   "-P:bm4:no-map-id:y",
   "-P:bm4:no-tupling:y",
 )
+
+//=============================================================================
+//=============================================================================
+
+//https://github.com/busymachines/busymachines-commons
+def bmCommons(m: String): ModuleID = "com.busymachines" %% s"busymachines-commons-$m" % "0.3.0-RC8"
+
+lazy val bmcCore:          ModuleID = bmCommons("core")              withSources ()
+lazy val bmcDuration:      ModuleID = bmCommons("duration")          withSources ()
+lazy val bmcEffects:       ModuleID = bmCommons("effects")           withSources ()
+lazy val bmcEffectsSync:   ModuleID = bmCommons("effects-sync")      withSources ()
+lazy val bmcEffectsSyncC:  ModuleID = bmCommons("effects-sync-cats") withSources ()
+lazy val bmcEffectsAsync:  ModuleID = bmCommons("effects-async")     withSources ()
+lazy val bmcJson:          ModuleID = bmCommons("json")              withSources ()
+lazy val bmcSemVer:        ModuleID = bmCommons("semver")            withSources ()
+lazy val bmcSemVerParsers: ModuleID = bmCommons("semver-parsers")    withSources ()
 
 //============================================================================================
 //================================= http://typelevel.org/scala/ ==============================

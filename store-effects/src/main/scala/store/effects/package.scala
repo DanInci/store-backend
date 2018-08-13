@@ -1,10 +1,18 @@
 package store
 
+import busymachines.effects.async._
+import busymachines.effects.sync._
+
+
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 04/08/2018
   */
-package object effects extends AnyRef {
+package object effects extends AnyRef with OptionSyntax.Implicits with OptionSyntaxAsync.Implcits with TryTypeDefinitons
+    with TrySyntax.Implicits with TrySyntaxAsync.Implcits with EitherSyntax.Implicits with EitherSyntaxAsync.Implcits
+    with ResultTypeDefinitions with ResultCompanionAliases with ResultSyntax.Implicits with ResultSyntaxAsync.Implcits
+    with FutureTypeDefinitions with FutureSyntax.Implicits with IOTypeDefinitions with IOSyntax.Implicits
+    with TaskTypeDefinitions with TaskSyntax.Implicits  {
 
   type NonEmptyList[A] = cats.data.NonEmptyList[A]
   @inline def NonEmptyList: cats.data.NonEmptyList.type = cats.data.NonEmptyList

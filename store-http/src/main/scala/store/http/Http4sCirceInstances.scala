@@ -1,12 +1,12 @@
-package store.json
+package store.http
 
 import fs2.Chunk
-import org.http4s.MediaType
-import org.http4s.headers.`Content-Type`
-import org.http4s.{EntityDecoder, EntityEncoder}
-import org.http4s.circe.CirceInstances
-import store.effects._
 import io.circe.Printer
+import org.http4s.circe.CirceInstances
+import org.http4s.headers.`Content-Type`
+import org.http4s.{EntityDecoder, EntityEncoder, MediaType}
+import store.effects._
+import store.json.{Decoder, Encoder, Json}
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
