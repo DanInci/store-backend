@@ -61,15 +61,19 @@ ALTER TABLE "category" ADD CONSTRAINT pkcategory
 	PRIMARY KEY (category_id);
 
 
-/******************** Add Table: "media_file" ************************/
+/******************** Add Table: "content" ************************/
 
 /* Build Table Structure */
-CREATE TABLE "media_file"
+CREATE TABLE content
 (
+  content_id VARCHAR(200) NOT NULL,
 	p_product_id OID NOT NULL,
-	name VARCHAR(100) NOT NULL,
-	file_path VARCHAR(200) NOT NULL
+	name VARCHAR(100) NOT NULL
 );
+
+/* Add Primary Key */
+ALTER TABLE content ADD CONSTRAINT pkcontent
+	PRIMARY KEY (content_id);
 
 
 /******************** Add Table: "order" ************************/
@@ -170,8 +174,8 @@ CREATE TABLE "stock"
 
 /************ Add Foreign Keys ***************/
 
-/* Add Foreign Key: fk_media_file_product */
-ALTER TABLE "media_file" ADD CONSTRAINT fk_media_file_product
+/* Add Foreign Key: fk_content_product */
+ALTER TABLE content ADD CONSTRAINT fk_content_product
 	FOREIGN KEY (p_product_id) REFERENCES "product" (product_id)
 	ON UPDATE NO ACTION ON DELETE NO ACTION;
 

@@ -1,12 +1,11 @@
 package store.service.product.rest
 
-import busymachines.core.NotFoundFailure
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
 import store.algebra.product._
 import store.effects._
-import store.algebra.product.entity.StoreProduct
+import store.algebra.product.entity.StoreProductDefinition
 import store.core._
 import store.core.entity.PagingInfo
 import store.http._
@@ -35,12 +34,7 @@ final class ProductRestService[F[_]](
   private val productService: HttpService[F] = HttpServiceWithErrorHandling[F] {
     case GET -> Root / "product" / LongVar(productId) =>
       for {
-        product <- productAlgebra.getProduct(ProductID(productId)).flatMap {
-          case Some(p) => F.pure[StoreProduct](p)
-          case None =>
-            F.raiseError[StoreProduct](
-              NotFoundFailure(s"Product with $productId was not found"))
-        }
+        product <- productAlgebra.getProduct(ProductID(productId))
         resp <- Ok(product)
       } yield resp
 
@@ -56,8 +50,8 @@ final class ProductRestService[F[_]](
 
     case request @ POST -> Root / "product" =>
       for {
-        product <- request.as[StoreProduct]
-        productId <- productAlgebra.createProduct(product)
+        productDefinition <- request.as[StoreProductDefinition]
+        productId <- productAlgebra.createProduct(productDefinition)
         resp <- Created(productId)
       } yield resp
 

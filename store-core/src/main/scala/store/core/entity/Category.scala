@@ -1,4 +1,4 @@
-package store.algebra.product.entity.component
+package store.core.entity
 
 import store.core.CategoryID
 

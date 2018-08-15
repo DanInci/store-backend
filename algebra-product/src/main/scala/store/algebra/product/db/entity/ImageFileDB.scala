@@ -7,6 +7,6 @@ import store.algebra.content.ContentID
   * @since 13/08/2018
   */
 final case class ImageFileDB(
-    name: String,
-    contentId: ContentID
+    contentId: ContentID,
+    name: String
 )

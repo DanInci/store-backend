@@ -2,7 +2,7 @@ package store.algebra.product
 
 import doobie.util.transactor.Transactor
 import store.algebra.content.ContentStorageAlgebra
-import store.algebra.product.entity.StoreProduct
+import store.algebra.product.entity.{StoreProduct, StoreProductDefinition}
 import store.core.entity.PagingInfo
 import store.core._
 import store.db.DatabaseContext
@@ -13,11 +13,11 @@ import store.db.DatabaseContext
   */
 trait ProductAlgebra[F[_]] {
 
-  def createProduct(product: StoreProduct): F[ProductID]
+  def createProduct(product: StoreProductDefinition): F[ProductID]
 
   def getProducts(nameFilter: Option[String], categoryFilter: List[CategoryID], pagingInfo: PagingInfo = PagingInfo.defaultPagingInfo): F[List[StoreProduct]]
 
-  def getProduct(productId: ProductID): F[Option[StoreProduct]]
+  def getProduct(productId: ProductID): F[StoreProduct]
 
   def removeProduct(productId: ProductID): F[Unit]
 

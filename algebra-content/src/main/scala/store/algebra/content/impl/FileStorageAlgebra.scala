@@ -25,14 +25,14 @@ final class FileStorageAlgebra[F[_]](filesConfig: FileStorageConfig)(
         (currentWorkingDirectory / filesConfig.imagesFolder / "product" / s"$productId")
           .createDirectoryIfNotExists(createParents = true)
       val file = File.newTemporaryFile("image_", "", Some(parentDirectory))
-      writeContentToFile(content, file)
+      file.writeByteArray(content)
       ContentID(currentWorkingDirectory.relativize(file).toString)
     }
 
-  private def writeContentToFile(content: BinaryContent, file: File): F[File] =
-    block {
-      F.delay(file.writeByteArray(content))
-    }
+  override def removeContentForProduct(productId: ProductID): F[Unit] = F.delay {
+    val productDirectory = (currentWorkingDirectory / filesConfig.imagesFolder / "product" / s"$productId")
+    productDirectory.delete(true)
+  }
 
   override def getContent(id: ContentID): F[BinaryContent] = {
     val file = File(id)

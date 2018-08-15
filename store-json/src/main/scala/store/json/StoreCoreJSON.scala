@@ -1,6 +1,7 @@
 package store.json
 
 import store.core._
+import store.core.entity._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -17,5 +18,7 @@ trait StoreCoreJSON {
     encode = Encoder.apply[Int].contramap(CategoryID.unapply),
     decode = Decoder.apply[Int].map(CategoryID.apply)
   )
+
+  implicit val categoryCodec: Codec[Category] = derive.codec[Category]
 
 }

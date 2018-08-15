@@ -9,6 +9,8 @@ trait ContentStorageAlgebra[F[_]] {
 
   def getContent(contentId: ContentID): F[BinaryContent]
 
+  def removeContentForProduct(productID: ProductID): F[Unit]
+
   def saveContent(binaryContent: BinaryContent, productId: ProductID): F[ContentID]
 
 }

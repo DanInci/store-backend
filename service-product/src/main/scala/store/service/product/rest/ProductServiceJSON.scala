@@ -2,7 +2,7 @@ package store.service.product.rest
 
 import store.algebra.content.BinaryContent
 import store.json._
-import store.algebra.product.{CareParagraph, Count, DescParagraph}
+import store.algebra.product.{CareParagraph, Count, DescParagraph, Price}
 import store.algebra.product.entity._
 import store.algebra.product.entity.component._
 
@@ -27,6 +27,11 @@ trait ProductServiceJSON extends StoreJSON {
     decode = Decoder.apply[Int].map(Count.apply)
   )
 
+  implicit val priceCirceCodec: Codec[Price] = Codec.instance[Price](
+    encode = Encoder.apply[Double].contramap(Price.unapply),
+    decode = Decoder.apply[Double].map(Price.apply)
+  )
+
   implicit val discountCirceCodec: Codec[Discount] = Codec.instance[Discount](
     encode = Encoder.apply[Double].contramap(_.percentage),
     decode = Decoder.apply[Double].emap(Discount(_).left.map(_.message))
@@ -47,5 +52,7 @@ trait ProductServiceJSON extends StoreJSON {
   implicit val stockCodec: Codec[Stock] = derive.codec[Stock]
 
   implicit val storeProductCodec: Codec[StoreProduct] = derive.codec[StoreProduct]
+
+  implicit val storeProductDefinitionCodec: Codec[StoreProductDefinition] = derive.codec[StoreProductDefinition]
 
 }
