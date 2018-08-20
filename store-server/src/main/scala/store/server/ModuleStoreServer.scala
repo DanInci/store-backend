@@ -1,18 +1,16 @@
 package store.server
 
-import cats.data.NonEmptyList
-import cats.effect.Concurrent
 import doobie.util.transactor.Transactor
 import org.http4s.HttpService
-import store.algebra.content.{
-  FileStorageConfig,
-  ContentContext,
-  ModuleContentAsync
-}
-import store.algebra.product.ModuleProductAsync
+import org.http4s.server.middleware.CORS
+import store.algebra.content._
+import store.algebra.email._
+import store.algebra.order._
+import store.algebra.product._
 import store.db.DatabaseContext
-import store.effects.Async
-import store.service.product.ModuleProductServiceAsync
+import store.effects._
+import store.service.order._
+import store.service.product._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -20,8 +18,11 @@ import store.service.product.ModuleProductServiceAsync
   */
 trait ModuleStoreServer[F[_]]
     extends ModuleProductServiceAsync[F]
+    with ModuleOrderServiceAsync[F]
     with ModuleProductAsync[F]
-    with ModuleContentAsync[F] {
+    with ModuleContentAsync[F]
+    with ModuleOrderAsync[F]
+    with ModuleEmailAsync[F] {
 
   override implicit def async: Async[F]
 
@@ -33,12 +34,14 @@ trait ModuleStoreServer[F[_]]
 
   override def fileStorageConfig: FileStorageConfig
 
-  def storeServerService: HttpService[F] = {
+  override def emailConfig: EmailConfig
+
+  def storeServerService: HttpService[F] = CORS {
     import cats.implicits._
     NonEmptyList
       .of(
-        productRestService.service,
-        stockRestService.service
+        productModuleService,
+        orderModuleService
       )
       .reduceK
   }
@@ -47,7 +50,7 @@ trait ModuleStoreServer[F[_]]
 
 object ModuleStoreServer {
 
-  def concurrent[F[_]](filesConfig: FileStorageConfig)(
+  def concurrent[F[_]](filesConfig: FileStorageConfig, eConfig: EmailConfig)(
       implicit c: Concurrent[F],
       t: Transactor[F],
       dbc: DatabaseContext[F],
@@ -62,6 +65,8 @@ object ModuleStoreServer {
       override implicit def contentContext: ContentContext[F] = cc
 
       override def fileStorageConfig: FileStorageConfig = filesConfig
+
+      override def emailConfig: EmailConfig = eConfig
     }
 
 }

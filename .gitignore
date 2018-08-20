@@ -1,5 +1,8 @@
 # Created by https://www.gitignore.io/api/git,sbt,java,macos,scala,intellij
 
+### CUSTOM FILES ###
+images
+
 ### Git ###
 *.orig
 
@@ -45,7 +48,8 @@ cmake-build-*/
 *.iws
 
 # IntelliJ
-out/
+/out/
+.idea
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/

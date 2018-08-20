@@ -4,7 +4,7 @@ import store.core._
 import doobie._
 import doobie.implicits._
 import cats.implicits._
-import store.algebra.product.Count
+import store.algebra.product._
 import store.algebra.product.db.entity._
 import store.algebra.product.entity._
 import store.algebra.product.entity.component.ProductSize

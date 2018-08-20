@@ -3,8 +3,8 @@ package store.algebra.product.db
 import doobie._
 import doobie.postgres.implicits._
 import store.algebra.content.ContentID
-import store.algebra.product.{CareParagraph, Count, DescParagraph, Price}
-import store.algebra.product.entity.component._
+import store.algebra.product._
+import store.algebra.product.entity.component.{Discount, ProductSize}
 import store.core._
 import store.effects._
 

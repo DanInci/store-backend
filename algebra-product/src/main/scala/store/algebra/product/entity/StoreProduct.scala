@@ -4,7 +4,7 @@ import store.algebra.product._
 import store.algebra.product.db.entity.StoreProductDB
 import store.algebra.product.entity.component._
 import store.core._
-import store.core.entity.Category
+import store.core.entity._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com

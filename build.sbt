@@ -83,6 +83,7 @@ lazy val `algebra-order` = project
   .settings(sbtAssemblySettings)
   .aggregate(
     `algebra-product`,
+    `algebra-email`,
     `store-config`,
     `store-db`,
     `store-core`,
@@ -90,6 +91,7 @@ lazy val `algebra-order` = project
   )
   .dependsOn(
     `algebra-product`,
+    `algebra-email`,
     `store-config`,
     `store-db`,
     `store-core`,
@@ -125,6 +127,20 @@ lazy val `algebra-content` = project
   )
   .dependsOn(
     `store-db`,
+    `store-config`,
+    `store-core`,
+    `store-effects`
+  )
+
+lazy val `algebra-email` = project
+  .settings(commonSettings)
+  .settings(sbtAssemblySettings)
+  .aggregate(
+    `store-config`,
+    `store-core`,
+    `store-effects`
+  )
+  .dependsOn(
     `store-config`,
     `store-core`,
     `store-effects`
@@ -359,7 +375,7 @@ lazy val bmcSemVerParsers: ModuleID = bmCommons("semver-parsers")    withSources
 lazy val catsCore: ModuleID = "org.typelevel" %% "cats-core" % "1.1.0" withSources ()
 
 //https://github.com/typelevel/cats-effect
-lazy val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % "1.0.0-RC2" withSources ()
+lazy val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % "1.0.0-RC3" withSources ()
 
 //https://github.com/monix/monix
 lazy val monix: ModuleID = "io.monix" %% "monix" % "3.0.0-RC1" withSources ()

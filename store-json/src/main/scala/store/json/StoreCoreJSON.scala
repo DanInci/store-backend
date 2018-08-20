@@ -5,7 +5,7 @@ import store.core.entity._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
-  * @since 13/08/2018
+  * @since 20/08/2018
   */
 trait StoreCoreJSON {
 

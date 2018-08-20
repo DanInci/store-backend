@@ -11,9 +11,15 @@ import org.http4s._
   */
 object HttpServiceWithErrorHandling {
 
-  def apply[F[_]](pf: PartialFunction[Request[F], F[Response[F]]])(implicit F: ApplicativeError[F, Throwable], handleError: Throwable => F[Response[F]]): HttpService[F] = {
-    Kleisli(req => pf.andThen(resp => resp.handleErrorWith(handleError)).andThen(OptionT.liftF(_)).applyOrElse(req, Function.const(OptionT.none)))
+  def apply[F[_]](pf: PartialFunction[Request[F], F[Response[F]]])(
+      implicit F: ApplicativeError[F, Throwable],
+      handleError: Request[F] => Throwable => F[Response[F]])
+    : HttpService[F] = {
+    Kleisli(
+      req =>
+        pf.andThen(resp => resp.handleErrorWith(handleError(req)))
+          .andThen(OptionT.liftF(_))
+          .applyOrElse(req, Function.const(OptionT.none)))
   }
 
 }
-

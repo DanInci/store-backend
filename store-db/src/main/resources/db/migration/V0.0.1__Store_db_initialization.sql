@@ -31,14 +31,16 @@ COMMENT ON SEQUENCE shipping_method_shipping_method_id_seq IS 'DbWrench Autogene
 CREATE TABLE "buyer"
 (
 	buyer_id OID DEFAULT nextval('buyer_buyer_id_seq'::regclass) NOT NULL,
+	o_order_id OID NOT NULL,
 	email VARCHAR(100) NOT NULL,
 	subscribed BOOL DEFAULT false NOT NULL,
 	firstname VARCHAR(30) NOT NULL,
 	lastname VARCHAR(30) NOT NULL,
 	address VARCHAR(255) NOT NULL,
 	city VARCHAR(50) NOT NULL,
-	country VARCHAR(50) NOT NULL,
 	county VARCHAR(50) NOT NULL,
+	country VARCHAR(50) NOT NULL,
+	postal_code VARCHAR(10) NOT NULL,
 	phone_number VARCHAR(50) NOT NULL
 );
 
@@ -82,16 +84,18 @@ ALTER TABLE content ADD CONSTRAINT pkcontent
 CREATE TABLE "order"
 (
 	order_id OID DEFAULT nextval('order_order_id_seq'::regclass) NOT NULL,
-	b_buyer_id OID NOT NULL,
 	sm_shipping_method_id OID NOT NULL,
+	placed_at TIMESTAMP NOT NULL DEFAULT NOW(),
 	billing_firstname VARCHAR(30) NOT NULL,
 	billing_lastname VARCHAR(30) NOT NULL,
 	billing_address VARCHAR(255) NOT NULL,
 	billing_city VARCHAR(50) NOT NULL,
 	billing_country VARCHAR(50) NOT NULL,
 	billing_county VARCHAR(50) NOT NULL,
-	billing_postal_code VARCHAR(50) NOT NULL,
-	billing_phone_number VARCHAR(50) NOT NULL
+	billing_postal_code VARCHAR(10) NOT NULL,
+	billing_phone_number VARCHAR(50) NOT NULL,
+	order_token VARCHAR(255) NOT NULL,
+	paid BOOLEAN NOT NULL DEFAULT false
 );
 
 /* Add Primary Key */
@@ -148,14 +152,6 @@ CREATE TABLE "shipping_method"
 /* Add Primary Key */
 ALTER TABLE "shipping_method" ADD CONSTRAINT pkshipping_method
 	PRIMARY KEY (shipping_method_id);
-
-
-/******************** Add Table: "size" ************************/
-
-/* Build Table Structure */
-CREATE TABLE "size"
-(
-);
 
 
 /******************** Add Table: "stock" ************************/

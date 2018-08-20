@@ -1,7 +1,7 @@
 package store.algebra.product.entity
 
 import store.algebra.product._
-import store.algebra.product.entity.component._
+import store.algebra.product.entity.component.{Discount, _}
 import store.core._
 
 /**
