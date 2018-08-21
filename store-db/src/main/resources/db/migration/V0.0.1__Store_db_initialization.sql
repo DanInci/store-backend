@@ -175,11 +175,6 @@ ALTER TABLE content ADD CONSTRAINT fk_content_product
 	FOREIGN KEY (p_product_id) REFERENCES "product" (product_id)
 	ON UPDATE NO ACTION ON DELETE NO ACTION;
 
-/* Add Foreign Key: fk_order_buyer */
-ALTER TABLE "order" ADD CONSTRAINT fk_order_buyer
-	FOREIGN KEY (b_buyer_id) REFERENCES "buyer" (buyer_id)
-	ON UPDATE NO ACTION ON DELETE NO ACTION;
-
 /* Add Foreign Key: fk_order_shipping_method */
 ALTER TABLE "order" ADD CONSTRAINT fk_order_shipping_method
 	FOREIGN KEY (sm_shipping_method_id) REFERENCES "shipping_method" (shipping_method_id)
@@ -187,6 +182,11 @@ ALTER TABLE "order" ADD CONSTRAINT fk_order_shipping_method
 
 /* Add Foreign Key: fk_ordered_product_order */
 ALTER TABLE "ordered_product" ADD CONSTRAINT fk_ordered_product_order
+	FOREIGN KEY (o_order_id) REFERENCES "order" (order_id)
+	ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+	/* Add Foreign Key: fk_buyer_order */
+ALTER TABLE "buyer" ADD CONSTRAINT fk_buyer_order
 	FOREIGN KEY (o_order_id) REFERENCES "order" (order_id)
 	ON UPDATE NO ACTION ON DELETE NO ACTION;
 
