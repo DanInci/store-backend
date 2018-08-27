@@ -1,6 +1,6 @@
 package store.service.product.rest
 
-import store.algebra.content.BinaryContent
+import store.algebra.content._
 import store.json._
 import store.algebra.product._
 import store.algebra.product.entity._
@@ -32,6 +32,11 @@ trait ProductServiceJSON extends StoreJSON {
     decode = Decoder.apply[Double].emap(Discount(_).left.map(_.message))
   )
 
+  implicit val contentIDCirceCodec: Codec[ContentID] = Codec.instance[ContentID](
+    encode = Encoder.apply[String].contramap(ContentID.unapply),
+    decode = Decoder.apply[String].map(ContentID.apply)
+  )
+
   implicit val binaryContentCirceCodec: Codec[BinaryContent] = Codec.instance[BinaryContent](
     encode = Encoder.apply[Array[Byte]].contramap(BinaryContent.unapply),
     decode = Decoder.apply[Array[Byte]].map(BinaryContent.apply)
@@ -48,6 +53,10 @@ trait ProductServiceJSON extends StoreJSON {
   )
 
   implicit val imageFileCodec: Codec[ImageFile] = derive.codec[ImageFile]
+
+  implicit val imageFileLinkCodec: Codec[ImageFileLink] = derive.codec[ImageFileLink]
+
+  implicit val imageFileDefinitionCodec: Codec[ImageFileDefinition] = derive.codec[ImageFileDefinition]
 
   implicit val stockCodec: Codec[Stock] = derive.codec[Stock]
 

@@ -31,6 +31,15 @@ final class ProductRestService[F[_]](
   private object PageLimitMatcher
       extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
 
+  private val categoryService: HttpService[F] =
+    HttpServiceWithErrorHandling[F] {
+      case GET -> Root / "category" =>
+        for {
+          categories <- productAlgebra.getCategories
+          resp <- Ok(categories)
+        } yield resp
+    }
+
   private val productService: HttpService[F] = HttpServiceWithErrorHandling[F] {
     case GET -> Root / "product" / LongVar(productId) =>
       for {
@@ -62,5 +71,12 @@ final class ProductRestService[F[_]](
       } yield resp
   }
 
-  val service: HttpService[F] = productService
+  val service: HttpService[F] = {
+    NonEmptyList
+      .of(
+        categoryService,
+        productService
+      )
+      .reduceK
+  }
 }

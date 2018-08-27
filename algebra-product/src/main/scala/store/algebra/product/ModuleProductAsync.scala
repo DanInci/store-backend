@@ -3,7 +3,7 @@ package store.algebra.product
 import store.effects._
 import store.db.DatabaseContext
 import doobie.util.transactor.Transactor
-import store.algebra.content.{ContentStorageAlgebra, ModuleContentAsync}
+import store.algebra.content.ModuleContentAsync
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -17,12 +17,11 @@ trait ModuleProductAsync[F[_]] { this: ModuleContentAsync[F] =>
 
   implicit def dbContext: DatabaseContext[F]
 
-  implicit def contentStorageAlgebra: ContentStorageAlgebra[F] = filesAlgebra
-
   def productAlgebra: ProductAlgebra[F] = _moduleAlgebra
 
   def stockAlgebra: ProductStockAlgebra[F] = _moduleAlgebra
 
-  private lazy val _moduleAlgebra: ModuleProductAlgebra[F] = new impl.AsyncAlgebraImpl[F]()
+  private lazy val _moduleAlgebra: ModuleProductAlgebra[F] =
+    new impl.AsyncAlgebraImpl[F](contentStorageAlgebra = s3StorageAlgebra)
 
 }

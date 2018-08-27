@@ -8,9 +8,11 @@ import store.config.ConfigLoader
   * @since 05/08/2018
   */
 final case class FileStorageConfig(
-    imagesFolder: String
+    imagesFolder: String,
+    baseLink: String
 )
 
 object FileStorageConfig extends ConfigLoader[FileStorageConfig] {
-  override def default[F[_]: Sync]: F[FileStorageConfig] = this.load("algebra.files")
+  override def default[F[_]: Sync]: F[FileStorageConfig] =
+    this.load("store.files")
 }

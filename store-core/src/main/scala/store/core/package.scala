@@ -12,6 +12,9 @@ package object core {
   object CategoryID extends PhantomType[Int]
   type CategoryID = CategoryID.Type
 
+  object Link extends PhantomType[String]
+  type Link = Link.Type
+
   object PageOffset extends PhantomType[Int]
   type PageOffset = PageOffset.Type
 

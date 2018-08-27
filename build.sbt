@@ -190,8 +190,6 @@ lazy val `store-effects` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
 
-
-
 //=============================================================================
 //=============================================================================
 
@@ -232,7 +230,8 @@ def commonSettings: Seq[Setting[_]] = Seq(
     attoParser,
     pureConfig,
     spire,
-    betterFiles
+    betterFiles,
+    amazonSDKS3
   ),
   /*
    * Eliminates useless, unintuitive, and sometimes broken additions of `withFilter`
@@ -264,7 +263,7 @@ def commonSettings: Seq[Setting[_]] = Seq(
     * It is an important issue that you need to keep track of if
     * you build apps on the JVM.
     */
-  dependencyOverrides += "org.typelevel" %% "cats-core"   % "1.1.0",
+  dependencyOverrides += "org.typelevel" %% "cats-core" % "1.1.0",
   dependencyOverrides += "org.typelevel" %% "cats-effect" % "0.10.1",
   resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 )
@@ -279,10 +278,10 @@ def sbtAssemblySettings: Seq[Setting[_]] = {
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("application.conf", _ @_*) => MergeStrategy.concat
-        case "application.conf" => MergeStrategy.concat
-        case PathList("reference.conf", _ @_*) => MergeStrategy.concat
-        case "reference.conf" => MergeStrategy.concat
-        case x                => (assemblyMergeStrategy in assembly).value(x)
+        case "application.conf"                  => MergeStrategy.concat
+        case PathList("reference.conf", _ @_*)   => MergeStrategy.concat
+        case "reference.conf"                    => MergeStrategy.concat
+        case x                                   => (assemblyMergeStrategy in assembly).value(x)
       },
       //this is to avoid propagation of the assembly task to all subprojects.
       //changing this makes assembly incredibly slow
@@ -337,7 +336,7 @@ def customScalaCompileFlags: Seq[String] = Seq(
   "-Ywarn-unused:params", // Warn if a value parameter is unused.
   "-Ywarn-unused:patvars", // Warn if a variable bound in a pattern is unused.
   "-Ywarn-unused:privates", // Warn if a private member is unused.
-  "-Ywarn-value-discard",  // Warn when non-Unit expression results are unused.
+  "-Ywarn-value-discard", // Warn when non-Unit expression results are unused.
   "-Ypartial-unification", // Enable partial unification in type constructor inference
 
   //"-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
@@ -354,17 +353,19 @@ def customScalaCompileFlags: Seq[String] = Seq(
 //=============================================================================
 
 //https://github.com/busymachines/busymachines-commons
-def bmCommons(m: String): ModuleID = "com.busymachines" %% s"busymachines-commons-$m" % "0.3.0-RC8"
+def bmCommons(m: String): ModuleID =
+  "com.busymachines" %% s"busymachines-commons-$m" % "0.3.0-RC8"
 
-lazy val bmcCore:          ModuleID = bmCommons("core")              withSources ()
-lazy val bmcDuration:      ModuleID = bmCommons("duration")          withSources ()
-lazy val bmcEffects:       ModuleID = bmCommons("effects")           withSources ()
-lazy val bmcEffectsSync:   ModuleID = bmCommons("effects-sync")      withSources ()
-lazy val bmcEffectsSyncC:  ModuleID = bmCommons("effects-sync-cats") withSources ()
-lazy val bmcEffectsAsync:  ModuleID = bmCommons("effects-async")     withSources ()
-lazy val bmcJson:          ModuleID = bmCommons("json")              withSources ()
-lazy val bmcSemVer:        ModuleID = bmCommons("semver")            withSources ()
-lazy val bmcSemVerParsers: ModuleID = bmCommons("semver-parsers")    withSources ()
+lazy val bmcCore: ModuleID = bmCommons("core") withSources ()
+lazy val bmcDuration: ModuleID = bmCommons("duration") withSources ()
+lazy val bmcEffects: ModuleID = bmCommons("effects") withSources ()
+lazy val bmcEffectsSync: ModuleID = bmCommons("effects-sync") withSources ()
+lazy val bmcEffectsSyncC
+  : ModuleID = bmCommons("effects-sync-cats") withSources ()
+lazy val bmcEffectsAsync: ModuleID = bmCommons("effects-async") withSources ()
+lazy val bmcJson: ModuleID = bmCommons("json") withSources ()
+lazy val bmcSemVer: ModuleID = bmCommons("semver") withSources ()
+lazy val bmcSemVerParsers: ModuleID = bmCommons("semver-parsers") withSources ()
 
 //============================================================================================
 //================================= http://typelevel.org/scala/ ==============================
@@ -372,10 +373,12 @@ lazy val bmcSemVerParsers: ModuleID = bmCommons("semver-parsers")    withSources
 //============================================================================================
 
 //https://github.com/typelevel/cats
-lazy val catsCore: ModuleID = "org.typelevel" %% "cats-core" % "1.1.0" withSources ()
+lazy val catsCore
+  : ModuleID = "org.typelevel" %% "cats-core" % "1.1.0" withSources ()
 
 //https://github.com/typelevel/cats-effect
-lazy val catsEffect: ModuleID = "org.typelevel" %% "cats-effect" % "1.0.0-RC3" withSources ()
+lazy val catsEffect
+  : ModuleID = "org.typelevel" %% "cats-effect" % "1.0.0-RC3" withSources ()
 
 //https://github.com/monix/monix
 lazy val monix: ModuleID = "io.monix" %% "monix" % "3.0.0-RC1" withSources ()
@@ -386,25 +389,30 @@ lazy val fs2: ModuleID = "co.fs2" %% "fs2-core" % "0.10.4" withSources ()
 //https://circe.github.io/circe/
 lazy val circeVersion: String = "0.9.3"
 
-lazy val circeCore:          ModuleID = "io.circe" %% "circe-core"           % circeVersion
-lazy val circeGeneric:       ModuleID = "io.circe" %% "circe-generic"        % circeVersion
-lazy val circeGenericExtras: ModuleID = "io.circe" %% "circe-generic-extras" % circeVersion
+lazy val circeCore: ModuleID = "io.circe" %% "circe-core" % circeVersion
+lazy val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % circeVersion
+lazy val circeGenericExtras
+  : ModuleID = "io.circe" %% "circe-generic-extras" % circeVersion
 
-lazy val attoParser: ModuleID = "org.tpolecat" %% "atto-core" % "0.6.2" withSources ()
+lazy val attoParser
+  : ModuleID = "org.tpolecat" %% "atto-core" % "0.6.2" withSources ()
 
 //https://github.com/http4s/http4s
 lazy val Http4sVersion = "0.18.12"
 
-lazy val http4sBlazeServer: ModuleID = "org.http4s" %% "http4s-blaze-server" % Http4sVersion withSources ()
-lazy val http4sCirce:       ModuleID = "org.http4s" %% "http4s-circe"        % Http4sVersion withSources ()
-lazy val http4sDSL:         ModuleID = "org.http4s" %% "http4s-dsl"          % Http4sVersion withSources ()
+lazy val http4sBlazeServer
+  : ModuleID = "org.http4s" %% "http4s-blaze-server" % Http4sVersion withSources ()
+lazy val http4sCirce
+  : ModuleID = "org.http4s" %% "http4s-circe" % Http4sVersion withSources ()
+lazy val http4sDSL
+  : ModuleID = "org.http4s" %% "http4s-dsl" % Http4sVersion withSources ()
 
 //https://github.com/tpolecat/doobie
 lazy val doobieVersion = "0.5.3"
 
-lazy val doobieHikari   = "org.tpolecat" %% "doobie-hikari"   % doobieVersion withSources () // HikariCP transactor.
+lazy val doobieHikari = "org.tpolecat" %% "doobie-hikari" % doobieVersion withSources () // HikariCP transactor.
 lazy val doobiePostgres = "org.tpolecat" %% "doobie-postgres" % doobieVersion withSources () // Postgres driver 42.2.2 + type mappings.
-lazy val doobieTK       = "org.tpolecat" %% "doobie-specs2"   % doobieVersion % Test withSources () // specs2 support for typechecking statements.
+lazy val doobieTK = "org.tpolecat" %% "doobie-specs2" % doobieVersion % Test withSources () // specs2 support for typechecking statements.
 
 lazy val flyway = "org.flywaydb" % "flyway-core" % "4.2.0" withSources ()
 
@@ -436,18 +444,24 @@ lazy val javaxMail = "com.sun.mail" % "javax.mail" % "1.6.1" withSources ()
 //============================================================================================
 
 //https://github.com/etorreborre/specs2
-lazy val specs2: ModuleID = "org.specs2" %% "specs2-core" % "4.3.0" % Test withSources ()
+lazy val specs2
+  : ModuleID = "org.specs2" %% "specs2-core" % "4.3.0" % Test withSources ()
 
 //============================================================================================
 //=========================================== misc ===========================================
 //============================================================================================
 
 //https://github.com/pureconfig/pureconfig
-lazy val pureConfig: ModuleID = "com.github.pureconfig" %% "pureconfig" % "0.9.1" withSources ()
-
+lazy val pureConfig
+  : ModuleID = "com.github.pureconfig" %% "pureconfig" % "0.9.1" withSources ()
 
 //https://github.com/ChristopherDavenport/linebacker
-lazy val linebacker: ModuleID = "io.chrisdavenport" % "linebacker_2.12" % "0.1.0" withSources()
+lazy val linebacker
+  : ModuleID = "io.chrisdavenport" % "linebacker_2.12" % "0.1.0" withSources ()
 
 //https://github.com/pathikrit/better-files
-lazy val betterFiles: ModuleID = "com.github.pathikrit" %% "better-files" % "3.6.0" withSources()
+lazy val betterFiles
+  : ModuleID = "com.github.pathikrit" %% "better-files" % "3.6.0" withSources ()
+
+lazy val amazonSDKS3
+  : ModuleID = "com.amazonaws" % "aws-java-sdk-s3" % "1.11.396" withSources ()

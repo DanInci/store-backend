@@ -14,7 +14,7 @@ final case class StoreProduct(
     productId: ProductID,
     category: Category,
     name: String,
-    images: List[ImageFile],
+    images: List[ImageFileLink],
     stocks: List[Stock],
     price: Price,
     discount: Discount,

@@ -6,11 +6,11 @@ import doobie._
 import doobie.implicits._
 import store.effects._
 import store.db.{BlockingAlgebra, DatabaseContext}
-import store.algebra.content.ContentStorageAlgebra
+import store.algebra.content._
+import store.algebra.content.entity.ContentDB
 import store.algebra.product.entity._
 import store.algebra.product._
-import store.algebra.product.db.entity.ImageFileDB
-import store.algebra.product.entity.component.ImageFile
+import store.algebra.product.entity.component.{ImageFile, ImageFileLink}
 import store.core._
 import store.core.entity._
 
@@ -19,16 +19,23 @@ import store.core.entity._
   * @since 04/08/2018
   */
 final private[product] class AsyncAlgebraImpl[F[_]](
+    contentStorageAlgebra: ContentStorageAlgebra[F])(
     implicit
     val F: Async[F],
     val transactor: Transactor[F],
-    val dbContext: DatabaseContext[F],
-    val contentStorageAlgebra: ContentStorageAlgebra[F]
+    val dbContext: DatabaseContext[F]
 ) extends ProductAlgebra[F]
     with ProductStockAlgebra[F]
     with BlockingAlgebra[F] {
 
   import store.algebra.product.db.ProductSql._
+  import store.algebra.content.impl.ContentSql
+
+  private lazy val _productFolder = "products"
+
+  override def getCategories: F[List[Category]] = transact {
+    findAllCategories
+  }
 
   override def createProduct(
       productDefinition: StoreProductDefinition): F[ProductID] = {
@@ -38,13 +45,15 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         .map(
           i =>
             contentStorageAlgebra
-              .saveContent(i.content, productId)
-              .map(ImageFileDB(_, i.name)))
+              .saveContent(Path(_productFolder + "/" + productId + "/"),
+                           i.format,
+                           i.content)
+              .map(ContentDB(_, i.name)))
         .sequence
       _ <- {
         val q = for {
           _ <- imageFilesDB
-            .map(i => addImageFileDBToProduct(i, productId))
+            .map(i => ContentSql.addContentToProduct(i, productId))
             .sequence
           _ <- productDefinition.stocks
             .map(s => addStockToProduct(s, productId))
@@ -59,30 +68,39 @@ final private[product] class AsyncAlgebraImpl[F[_]](
                            categoryFilter: List[CategoryID],
                            pagingInfo: PagingInfo): F[List[StoreProduct]] = {
     for {
-      productImageFilesDBList <- {
+      productImagesDBList <- {
         val q = for {
           productsDb <- findByNameAndCategories(nameFilter,
                                                 categoryFilter,
                                                 pagingInfo.offset,
                                                 pagingInfo.limit)
-          imageFilesDBList <- productsDb.map(
-            p => findImageFilesDBByProductID(p.productId)
-          ).sequence
-          stocksList <- productsDb.map(
-            p => findStocksByProductID(p.productId)
-          ).sequence
+          imagesDBList <- productsDb
+            .map(
+              p =>
+                ContentSql.findContentByProductID(p.productId, ImageFile.format)
+            )
+            .sequence
+          stocksList <- productsDb
+            .map(
+              p => findStocksByProductID(p.productId)
+            )
+            .sequence
           storeProducts = productsDb.mapWithIndex(
             (p, index) => StoreProduct.fromStoreProductDB(p, stocksList(index))
           )
-        } yield storeProducts zip imageFilesDBList
+        } yield storeProducts zip imagesDBList
         transact(q)
       }
-      products <- productImageFilesDBList.map {
-        case (p: StoreProduct, imagesDB: List[ImageFileDB]) =>
+      products <- productImagesDBList.map {
+        case (p: StoreProduct, imagesDB: List[ContentDB]) =>
           for {
-            images <- imagesDB.map(i => contentStorageAlgebra
-                                              .getContent(i.contentId)
-            .map(ImageFile(i.name, _))).sequence
+            images <- imagesDB
+              .map(
+                i =>
+                  contentStorageAlgebra
+                    .getContentLink(i.contentId)
+                    .map(ImageFileLink(i.name, _)))
+              .sequence
             product = p.copy(images = images)
           } yield product
       }.sequence
@@ -95,18 +113,18 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         val q = for {
           productDB <- findById(productId).flatMap(
             exists(_, NotFoundFailure(s"Product not found wih id $productId")))
-          imageFilesDB <- findImageFilesDBByProductID(productId)
+          imagesDB <- ContentSql.findContentByProductID(productId,
+                                                        ImageFile.format)
           stocks <- findStocksByProductID(productDB.productId)
-        } yield
-          (StoreProduct.fromStoreProductDB(productDB, stocks), imageFilesDB)
+        } yield (StoreProduct.fromStoreProductDB(productDB, stocks), imagesDB)
         transact(q)
       }
       images <- imageFilesDB
         .map(
           i =>
             contentStorageAlgebra
-              .getContent(i.contentId)
-              .map(ImageFile(i.name, _)))
+              .getContentLink(i.contentId)
+              .map(ImageFileLink(i.name, _)))
         .sequence
     } yield product.copy(images = images)
   }
@@ -116,13 +134,14 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       shouldDeleteFiles <- {
         val q = for {
           _ <- deleteStockByProductID(productId)
-          _ <- deleteImageFileDBByProductID(productId)
+          _ <- ContentSql.deleteContentByProductID(productId)
           affectedRows <- deleteProduct(productId)
         } yield affectedRows == 1
         transact(q)
       }
       _ <- if (shouldDeleteFiles)
-        contentStorageAlgebra.removeContentForProduct(productId)
+        contentStorageAlgebra.removeContentsFromPath(
+          Path(_productFolder + "/" + productId))
       else F.raiseError(NotFoundFailure(s"Product not found wih id $productId"))
     } yield ()
   }

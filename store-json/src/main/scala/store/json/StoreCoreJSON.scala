@@ -19,6 +19,11 @@ trait StoreCoreJSON {
     decode = Decoder.apply[Int].map(CategoryID.apply)
   )
 
+  implicit val lLinkCirceCodec: Codec[Link] = Codec.instance[Link](
+    encode = Encoder.apply[String].contramap(Link.unapply),
+    decode = Decoder.apply[String].map(Link.apply)
+  )
+
   implicit val categoryCodec: Codec[Category] = derive.codec[Category]
 
 }

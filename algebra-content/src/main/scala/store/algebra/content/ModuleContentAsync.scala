@@ -14,7 +14,15 @@ trait ModuleContentAsync[F[_]] {
 
   def fileStorageConfig: FileStorageConfig
 
-  def filesAlgebra: ContentStorageAlgebra[F] = _moduleFiles
+  def s3StorageConfig: S3StorageConfig
 
-  private lazy val _moduleFiles: ContentStorageAlgebra[F] = new impl.FileStorageAlgebra[F](fileStorageConfig)
+  def filesStorageAlgebra: ContentStorageAlgebra[F] = _filesStorageAlgebra
+
+  def s3StorageAlgebra: ContentStorageAlgebra[F] = _s3StorageAlgebra
+
+  private lazy val _filesStorageAlgebra: ContentStorageAlgebra[F] =
+    new impl.FileStorageAlgebra[F](fileStorageConfig)
+
+  private lazy val _s3StorageAlgebra: ContentStorageAlgebra[F] =
+    new impl.S3StorageAlgebra[F](s3StorageConfig)
 }

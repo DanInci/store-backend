@@ -34,6 +34,8 @@ trait ModuleStoreServer[F[_]]
 
   override def fileStorageConfig: FileStorageConfig
 
+  override def s3StorageConfig: S3StorageConfig
+
   override def emailConfig: EmailConfig
 
   def storeServerService: HttpService[F] = CORS {
@@ -50,7 +52,7 @@ trait ModuleStoreServer[F[_]]
 
 object ModuleStoreServer {
 
-  def concurrent[F[_]](filesConfig: FileStorageConfig, eConfig: EmailConfig)(
+  def concurrent[F[_]](filesConfig: FileStorageConfig, s3Config: S3StorageConfig, eConfig: EmailConfig)(
       implicit c: Concurrent[F],
       t: Transactor[F],
       dbc: DatabaseContext[F],
@@ -65,6 +67,8 @@ object ModuleStoreServer {
       override implicit def contentContext: ContentContext[F] = cc
 
       override def fileStorageConfig: FileStorageConfig = filesConfig
+
+      override def s3StorageConfig: S3StorageConfig = s3Config
 
       override def emailConfig: EmailConfig = eConfig
     }

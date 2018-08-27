@@ -1,16 +1,21 @@
 package store.algebra.content
 
-import store.core.ProductID
+import store.core.Link
+
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 05/08/2018
   */
 trait ContentStorageAlgebra[F[_]] {
 
-  def getContent(contentId: ContentID): F[BinaryContent]
+  def getContentLink(id: ContentID): F[Link]
 
-  def removeContentForProduct(productID: ProductID): F[Unit]
+  def getContent(id: ContentID): F[BinaryContent]
 
-  def saveContent(binaryContent: BinaryContent, productId: ProductID): F[ContentID]
+  def saveContent(path: Path, format: Format, content: BinaryContent): F[ContentID]
+
+  def removeContent(id: ContentID): F[Unit]
+
+  def removeContentsFromPath(path: Path): F[Unit]
 
 }

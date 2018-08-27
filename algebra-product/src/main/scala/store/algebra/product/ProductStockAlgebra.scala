@@ -23,5 +23,5 @@ trait ProductStockAlgebra[F[_]] {
 object ProductStockAlgebra {
   import store.effects._
 
-  def async[F[_]: Async](implicit transactor: Transactor[F], dbContext: DatabaseContext[F], contentAlgebra: ContentStorageAlgebra[F]): ProductAlgebra[F] = new impl.AsyncAlgebraImpl[F]()
+  def async[F[_]: Async](contentAlgebra: ContentStorageAlgebra[F])(implicit transactor: Transactor[F], dbContext: DatabaseContext[F]): ProductAlgebra[F] = new impl.AsyncAlgebraImpl[F](contentAlgebra)
 }

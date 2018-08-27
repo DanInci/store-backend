@@ -8,12 +8,19 @@ import store.algebra.product._
 import store.algebra.product.db.entity._
 import store.algebra.product.entity._
 import store.algebra.product.entity.component.ProductSize
+import store.core.entity.Category
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 13/08/2018
   */
 object ProductSql extends ProductComposites {
+
+  // CATEGORY QUERIES
+
+  def findAllCategories: ConnectionIO[List[Category]] = {
+    sql"SELECT category_id, name FROM category".query[Category].to[List]
+  }
 
   // PRODUCT QUERIES
 
@@ -66,21 +73,6 @@ object ProductSql extends ProductComposites {
 
   def deleteProduct(productId: ProductID): ConnectionIO[Int] =
     sql"DELETE FROM product WHERE product_id=$productId".update.run
-
-  // CONTENT QUERIES
-
-  def addImageFileDBToProduct(imageFile: ImageFileDB,
-                              productId: ProductID): ConnectionIO[Int] =
-    sql"INSERT INTO content (content_id, p_product_id, name) VALUES (${imageFile.contentId}, $productId, ${imageFile.name})".update.run
-
-  def findImageFilesDBByProductID(
-      productId: ProductID): ConnectionIO[List[ImageFileDB]] =
-    sql"SELECT content_id, name FROM content WHERE p_product_id=$productId"
-      .query[ImageFileDB]
-      .to[List]
-
-  def deleteImageFileDBByProductID(productId: ProductID): ConnectionIO[Int] =
-    sql"DELETE FROM content WHERE p_product_id=$productId".update.run
 
   // STOCKS QUERIES
 

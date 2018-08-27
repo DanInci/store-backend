@@ -3,7 +3,7 @@ package store.algebra.product
 import doobie.util.transactor.Transactor
 import store.algebra.content.ContentStorageAlgebra
 import store.algebra.product.entity.{StoreProduct, StoreProductDefinition}
-import store.core.entity.PagingInfo
+import store.core.entity.{Category, PagingInfo}
 import store.core._
 import store.db.DatabaseContext
 
@@ -12,6 +12,8 @@ import store.db.DatabaseContext
   * @since 04/08/2018
   */
 trait ProductAlgebra[F[_]] {
+
+  def getCategories: F[List[Category]]
 
   def createProduct(product: StoreProductDefinition): F[ProductID]
 
@@ -26,5 +28,5 @@ trait ProductAlgebra[F[_]] {
 object ProductAlgebra {
   import store.effects._
 
-  def async[F[_]: Async](implicit transactor: Transactor[F], dbContext: DatabaseContext[F], contentAlgebra: ContentStorageAlgebra[F]): ProductAlgebra[F] = new impl.AsyncAlgebraImpl[F]()
+  def async[F[_]: Async](contentAlgebra: ContentStorageAlgebra[F])(implicit transactor: Transactor[F], dbContext: DatabaseContext[F]): ProductAlgebra[F] = new impl.AsyncAlgebraImpl[F](contentAlgebra)
 }

@@ -11,7 +11,7 @@ import store.core._
 final case class StoreProductDefinition(
     categoryId: CategoryID,
     name: String,
-    images: List[ImageFile],
+    images: List[ImageFileDefinition],
     stocks: List[Stock],
     price: Price,
     discount: Discount,

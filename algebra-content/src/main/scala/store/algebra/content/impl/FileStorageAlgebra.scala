@@ -4,39 +4,46 @@ import better.files.File
 import better.files.File.currentWorkingDirectory
 import cats.effect.Async
 import store.algebra.content._
-import store.core.ProductID
+import store.core.Link
 import store.db.BlockingAlgebra
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 05/08/2018
   */
-final class FileStorageAlgebra[F[_]](filesConfig: FileStorageConfig)(
+final class FileStorageAlgebra[F[_]](config: FileStorageConfig)(
     implicit
     val F: Async[F],
     val contentCtx: ContentContext[F]
 ) extends ContentStorageAlgebra[F]
     with BlockingAlgebra[F] {
 
-  override def saveContent(content: BinaryContent,
-                           productId: ProductID): F[ContentID] =
-    F.delay {
-      val parentDirectory =
-        (currentWorkingDirectory / filesConfig.imagesFolder / "product" / s"$productId")
-          .createDirectoryIfNotExists(createParents = true)
-      val file = File.newTemporaryFile("image_", "", Some(parentDirectory))
-      file.writeByteArray(content)
-      ContentID(currentWorkingDirectory.relativize(file).toString)
-    }
+  override def getContentLink(id: ContentID): F[Link] = F.delay{
+    Link(config.baseLink + "/" + id)
+  }
 
-  override def removeContentForProduct(productId: ProductID): F[Unit] = F.delay {
-    val productDirectory = (currentWorkingDirectory / filesConfig.imagesFolder / "product" / s"$productId")
-    productDirectory.delete(true)
+  override def saveContent(path: Path, format: Format, content: BinaryContent): F[ContentID] =  F.delay {
+    val parentDirectory =
+      (currentWorkingDirectory / config.imagesFolder / path)
+        .createDirectoryIfNotExists(createParents = true)
+    val file = File.newTemporaryFile("image_", "", Some(parentDirectory))
+    file.writeByteArray(content)
+    ContentID(currentWorkingDirectory.relativize(file).toString)
   }
 
   override def getContent(id: ContentID): F[BinaryContent] = {
     val file = File(id)
     getContentFromFile(file)
+  }
+
+  override def removeContent(id: ContentID): F[Unit] = F.delay {
+    val file = currentWorkingDirectory / config.imagesFolder / id
+    if(file.isDirectory) file.delete(true)
+  }
+
+  override def removeContentsFromPath(path: Path): F[Unit] = F.delay {
+    val productDirectory = currentWorkingDirectory / config.imagesFolder / path
+    productDirectory.delete(true)
   }
 
   private def getContentFromFile(file: File): F[BinaryContent] = block {

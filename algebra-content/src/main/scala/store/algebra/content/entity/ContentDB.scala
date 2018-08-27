@@ -1,12 +1,12 @@
-package store.algebra.product.db.entity
+package store.algebra.content.entity
 
 import store.algebra.content.ContentID
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
-  * @since 13/08/2018
+  * @since 27/08/2018
   */
-final case class ImageFileDB(
+final case class ContentDB(
     contentId: ContentID,
     name: String
 )
