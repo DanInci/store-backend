@@ -28,15 +28,17 @@ object StoreProduct {
       spdb: StoreProductDB,
       stocks: List[Stock]
   ): StoreProduct =
-    new StoreProduct(spdb.productId,
-                     spdb.category.copy(sex = None),
-                     spdb.sex,
-                     spdb.name,
-                     Nil,
-                     stocks,
-                     spdb.price,
-                     spdb.discount,
-                     spdb.isAvailableOnCommand,
-                     spdb.description,
-                     spdb.care)
+    new StoreProduct(
+      spdb.productId,
+      Category(spdb.category.categoryId, spdb.category.name, None),
+      spdb.category.sex,
+      spdb.name,
+      Nil,
+      stocks,
+      spdb.price,
+      spdb.discount,
+      spdb.isAvailableOnCommand,
+      spdb.description,
+      spdb.care
+    )
 }

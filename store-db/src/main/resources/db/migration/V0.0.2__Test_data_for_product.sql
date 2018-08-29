@@ -16,12 +16,12 @@ INSERT INTO content (content_id, p_product_id, name) VALUES ('products/3/DSC_463
 INSERT INTO content (content_id, p_product_id, name) VALUES ('products/3/DSC_4649.jpg', 3, 'Cassia dress 2');
 INSERT INTO content (content_id, p_product_id, name) VALUES ('products/3/DSC_4708.jpg', 3, 'Cassia dress 3');
 
-INSERT INTO stock (p_product_id, size, count) VALUES (1, 'M', 23);
-INSERT INTO stock (p_product_id, size, count) VALUES (1, 'S', 18);
-INSERT INTO stock (p_product_id, size, count) VALUES (1, 'XL', 3);
-INSERT INTO stock (p_product_id, size, count) VALUES (2, 'XS', 5);
-INSERT INTO stock (p_product_id, size, count) VALUES (2, 'M', 2);
-INSERT INTO stock (p_product_id, size, count) VALUES (2, 'S', 8);
-INSERT INTO stock (p_product_id, size, count) VALUES (3, 'L', 20);
-INSERT INTO stock (p_product_id, size, count) VALUES (3, 'XL', 15);
-INSERT INTO stock (p_product_id, size, count) VALUES (3, 'M', 12);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (1, 'M', 23);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (1, 'S', 18);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (1, 'XL', 3);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (2, 'XS', 5);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (2, 'M', 2);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (2, 'S', 8);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (3, 'L', 20);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (3, 'XL', 15);
+INSERT INTO stock (p_product_id, product_size, available_count) VALUES (3, 'M', 12);

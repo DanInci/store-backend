@@ -13,6 +13,7 @@ object Sex {
 
   case object M extends Sex
   case object F extends Sex
+  case object U extends Sex
 
   def fromString(s: String): Result[Sex] =
     nameToSex

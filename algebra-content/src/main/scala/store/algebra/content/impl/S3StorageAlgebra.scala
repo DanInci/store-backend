@@ -75,7 +75,7 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
       inputStream = new ByteArrayInputStream(content)
       metaData = {
         val x = new ObjectMetadata()
-        x.setContentLength(content.length)
+        x.setContentLength(content.length.toLong)
         x
       }
       request = new PutObjectRequest(

@@ -1,6 +1,6 @@
 package store.algebra
 
-import java.time.LocalDateTime
+import java.time.{LocalDate, LocalDateTime}
 
 import store.core.PhantomType
 
@@ -13,11 +13,23 @@ package object order {
   object OrderID extends PhantomType[Long]
   type OrderID = OrderID.Type
 
+  object OrderedProductID extends PhantomType[Long]
+  type OrderedProductID = OrderedProductID.Type
+
+  object BuyerID extends PhantomType[Long]
+  type BuyerID = BuyerID.Type
+
   object ShippingMethodID extends PhantomType[Int]
   type ShippingMethodID = ShippingMethodID.Type
 
   object PlacedAt extends PhantomType[LocalDateTime]
   type PlacedAt = PlacedAt.Type
+
+  object StartDate extends PhantomType[LocalDate]
+  type StartDate = StartDate.Type
+
+  object EndDate extends PhantomType[LocalDate]
+  type EndDate = EndDate.Type
 
   object FirstName extends PhantomType[String]
   type FirstName = FirstName.Type

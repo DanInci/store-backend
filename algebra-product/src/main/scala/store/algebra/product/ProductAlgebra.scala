@@ -2,7 +2,7 @@ package store.algebra.product
 
 import doobie.util.transactor.Transactor
 import store.algebra.content.ContentStorageAlgebra
-import store.algebra.product.entity.component.Category
+import store.algebra.product.entity.component.{Category, Sex}
 import store.algebra.product.entity.{StoreProduct, StoreProductDefinition}
 import store.core.entity.PagingInfo
 import store.db.DatabaseContext
@@ -13,7 +13,7 @@ import store.db.DatabaseContext
   */
 trait ProductAlgebra[F[_]] {
 
-  def getCategories: F[List[Category]]
+  def getCategories(sex: Sex): F[List[Category]]
 
   def createProduct(product: StoreProductDefinition): F[ProductID]
 

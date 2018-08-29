@@ -1,6 +1,7 @@
 package store.algebra.order.entity
 
 import store.algebra.order._
+import store.algebra.order.db.OrderSql.OrderDB
 import store.algebra.order.entity.component.ShippingMethod
 
 /**
@@ -17,7 +18,8 @@ final case class OrderDefinition(
     billingCity: BillingCity,
     billingCounty: BillingCounty,
     billingCountry: BillingCountry,
-    billingPostalCode: BillingPostalCode
+    billingPostalCode: BillingPostalCode,
+    billingPhoneNumber: BillingPhoneNumber
 ) extends Serializable
 
 final case class Order(
@@ -33,5 +35,24 @@ final case class Order(
     billingCounty: BillingCounty,
     billingCountry: BillingCountry,
     billingPostalCode: BillingPostalCode,
-    isPaid: Boolean
+    billingPhoneNumber: BillingPhoneNumber
 ) extends Serializable
+
+object Order {
+  def fromOrderDB(odb: OrderDB, orderedProducts: List[OrderedProduct]): Order =
+    Order(
+      odb.id,
+      odb.buyer,
+      orderedProducts,
+      odb.placedAt,
+      odb.shippingMethod,
+      odb.billingFirstName,
+      odb.billingLastName,
+      odb.billingAddress,
+      odb.billingCity,
+      odb.billingCounty,
+      odb.billingCountry,
+      odb.billingPostalCode,
+      odb.billingPhoneNumber
+    )
+}

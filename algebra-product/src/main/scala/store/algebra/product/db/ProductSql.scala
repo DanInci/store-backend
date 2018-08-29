@@ -19,8 +19,8 @@ object ProductSql extends ProductComposites {
 
   // CATEGORY QUERIES
 
-  def findAllCategories: ConnectionIO[List[Category]] = {
-    sql"SELECT category_id, name, sex FROM category".query[Category].to[List]
+  def findCategoriesBySex(sex: Sex): ConnectionIO[List[CategoryDB]] = {
+    sql"SELECT category_id, name, sex FROM category WHERE sex=$sex".query[CategoryDB].to[List]
   }
 
   // CONTENT QUERIES
@@ -50,7 +50,7 @@ object ProductSql extends ProductComposites {
   }
 
   def findById(productId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, c.category_id, c.name
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, c.category_id, c.name, c.sex
          | FROM product p
          | INNER JOIN category c ON p.c_category_id = c.category_id
          | WHERE p.product_id=$productId""".stripMargin
@@ -79,7 +79,7 @@ object ProductSql extends ProductComposites {
       }
     }
 
-    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, c.category_id, c.name
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, c.category_id, c.name, c.sex
          | FROM product p
          | INNER JOIN category c ON p.c_category_id = c.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
@@ -95,35 +95,35 @@ object ProductSql extends ProductComposites {
   // STOCKS QUERIES
 
   def addStockToProduct(stock: Stock, productId: ProductID): ConnectionIO[Int] =
-    sql"INSERT INTO stock (p_product_id, size, count) VALUES ($productId, ${stock.size}, ${stock.count})".update.run
+    sql"INSERT INTO stock (p_product_id, product_size, available_count) VALUES ($productId, ${stock.size}, ${stock.count})".update.run
 
   def findStocksByProductID(productId: ProductID): ConnectionIO[List[Stock]] =
-    sql"SELECT size, count FROM stock WHERE p_product_id=$productId"
+    sql"SELECT product_size, available_count FROM stock WHERE p_product_id=$productId"
       .query[Stock]
       .to[List]
 
   def findStockByProductIdAndSize(
       productId: ProductID,
       productSize: ProductSize): ConnectionIO[Option[Stock]] = {
-    sql"SELECT size, count FROM stock WHERE p_product_id=$productId AND size=$productSize"
+    sql"SELECT product_size, count FROM stock WHERE p_product_id=$productId AND product_size=$productSize"
       .query[Stock]
       .option
   }
 
   def updateStockByProductID(count: Count,
                              productId: ProductID): ConnectionIO[Int] =
-    sql"UPDATE stock SET count=$count WHERE p_product_id=$productId".update.run
+    sql"UPDATE stock SET available_count=$count WHERE p_product_id=$productId".update.run
 
   def updateStockByProductIDAndSize(count: Count,
                                     productId: ProductID,
                                     size: ProductSize): ConnectionIO[Int] =
-    sql"UPDATE stock SET count=$count WHERE p_product_id=$productId AND size=$size".update.run
+    sql"UPDATE stock SET available_count=$count WHERE p_product_id=$productId AND product_size=$size".update.run
 
   def deleteStockByProductID(productId: ProductID): ConnectionIO[Int] =
     sql"DELETE FROM stock WHERE p_product_id=$productId".update.run
 
   def deleteStockByProductIDAndSize(productId: ProductID,
                                     size: ProductSize): ConnectionIO[Int] =
-    sql"DELETE FROM stock WHERE p_product_id=$productId AND size=$size".update.run
+    sql"DELETE FROM stock WHERE p_product_id=$productId AND product_size=$size".update.run
 
 }

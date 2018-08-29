@@ -32,8 +32,9 @@ final private[product] class AsyncAlgebraImpl[F[_]](
 
   private lazy val _productFolder = "products"
 
-  override def getCategories: F[List[Category]] = transact {
-    findAllCategories
+  override def getCategories(sex: Sex): F[List[Category]] = transact {
+    findCategoriesBySex(sex).map(_.map(c =>
+      Category(c.categoryId, c.name, Some(c.sex))))
   }
 
   override def createProduct(
@@ -75,8 +76,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
                                                 pagingInfo.limit)
           imagesDBList <- productsDb
             .map(
-              p =>
-                findContentByProductID(p.productId, ImageFile.format)
+              p => findContentByProductID(p.productId, ImageFile.format)
             )
             .sequence
           stocksList <- productsDb
@@ -112,8 +112,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         val q = for {
           productDB <- findById(productId).flatMap(
             exists(_, NotFoundFailure(s"Product not found wih id $productId")))
-          imagesDB <- findContentByProductID(productId,
-                                                        ImageFile.format)
+          imagesDB <- findContentByProductID(productId, ImageFile.format)
           stocks <- findStocksByProductID(productDB.productId)
         } yield (StoreProduct.fromStoreProductDB(productDB, stocks), imagesDB)
         transact(q)

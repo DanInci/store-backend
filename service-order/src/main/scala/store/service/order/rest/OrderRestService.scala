@@ -1,5 +1,7 @@
 package store.service.order.rest
 
+import java.time.LocalDate
+
 import busymachines.core.NotFoundFailure
 import cats.implicits._
 import org.http4s._
@@ -7,6 +9,8 @@ import org.http4s.dsl._
 import store.algebra.email.EmailAlgebra
 import store.algebra.order._
 import store.algebra.order.entity._
+import store.core.entity.PagingInfo
+import store.core.{PageLimit, PageOffset}
 import store.effects._
 import store.http._
 
@@ -24,6 +28,12 @@ final class OrderRestService[F[_]](
     with OrderServiceJSON {
 
   private object OrderCodeMatcher extends QueryParamDecoderMatcher[String]("code")
+  private object StartDateMatcher extends OptionalQueryParamDecoderMatcher[LocalDate]("startDate")
+  private object EndDateMatcher extends OptionalQueryParamDecoderMatcher[LocalDate]("endDate")
+  private object PageOffsetMatcher
+    extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
+  private object PageLimitMatcher
+    extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
 
   val orderPlacementService: HttpService[F] = HttpServiceWithErrorHandling {
     case request @ POST -> Root / "order" =>
@@ -35,6 +45,16 @@ final class OrderRestService[F[_]](
   }
 
   val orderService: HttpService[F] = HttpServiceWithErrorHandling {
+    case GET -> Root / "order" :? StartDateMatcher(startDate) +& EndDateMatcher(endDate) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
+      for {
+        orders <- orderAlgebra.getOrders(
+          startDate.map(StartDate.apply),
+          endDate.map(EndDate.apply),
+          PagingInfo(offset, limit)
+        )
+        resp <- Ok(orders)
+      } yield resp
+
     case GET -> Root / "order" / LongVar(id) =>
       for {
         order <- orderAlgebra.getOrder(OrderID(id)).flatMap {

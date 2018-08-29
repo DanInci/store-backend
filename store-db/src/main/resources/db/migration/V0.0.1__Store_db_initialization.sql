@@ -86,7 +86,7 @@ CREATE TABLE "order"
 (
 	order_id OID DEFAULT nextval('order_order_id_seq'::regclass) NOT NULL,
 	sm_shipping_method_id OID NOT NULL,
-	placed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+	placed_at TIMESTAMP NOT NULL,
 	billing_firstname VARCHAR(30) NOT NULL,
 	billing_lastname VARCHAR(30) NOT NULL,
 	billing_address VARCHAR(255) NOT NULL,
@@ -95,8 +95,7 @@ CREATE TABLE "order"
 	billing_county VARCHAR(50) NOT NULL,
 	billing_postal_code VARCHAR(10) NOT NULL,
 	billing_phone_number VARCHAR(50) NOT NULL,
-	order_token VARCHAR(255) NOT NULL,
-	paid BOOLEAN NOT NULL DEFAULT false
+	order_token VARCHAR(255) NOT NULL
 );
 
 /* Add Primary Key */
@@ -112,8 +111,8 @@ CREATE TABLE "ordered_product"
 	ordered_product_id OID DEFAULT nextval('ordered_product_ordered_product_id_seq'::regclass) NOT NULL,
 	p_product_id OID NOT NULL,
 	o_order_id OID NOT NULL,
-	size VARCHAR(3) NOT NULL,
-	count INTEGER NOT NULL
+	product_size VARCHAR(3) NOT NULL,
+	ordered_count INTEGER NOT NULL
 );
 
 /* Add Primary Key */
@@ -161,8 +160,8 @@ ALTER TABLE "shipping_method" ADD CONSTRAINT pkshipping_method
 CREATE TABLE "stock"
 (
 	p_product_id OID NOT NULL,
-	size VARCHAR(3) NOT NULL,
-	count INTEGER NOT NULL
+	product_size VARCHAR(3) NOT NULL,
+	available_count INTEGER NOT NULL
 );
 
 

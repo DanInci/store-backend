@@ -9,12 +9,11 @@ import store.algebra.product.entity.component._
   */
 final case class StoreProductDB(
     productId: ProductID,
-    sex: Sex,
     name: String,
     price: Price,
     discount: Discount,
     isAvailableOnCommand: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph],
-    category: Category
+    category: CategoryDB
 )

@@ -1,11 +1,13 @@
 package store.service.product.rest
 
+import busymachines.core.InvalidInputFailure
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
 import store.algebra.product._
 import store.effects._
 import store.algebra.product.entity.StoreProductDefinition
+import store.algebra.product.entity.component.Sex
 import store.core._
 import store.core.entity.PagingInfo
 import store.http._
@@ -26,6 +28,7 @@ final class ProductRestService[F[_]](
       extends OptionalQueryParamDecoderMatcher[String]("name")
   private object ProductCategoryMatcher
       extends OptionalMultiQueryParamDecoderMatcher[Int]("c")
+  private object SexMatcher extends QueryParamDecoderMatcher[String]("s")
   private object PageOffsetMatcher
       extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
   private object PageLimitMatcher
@@ -33,9 +36,13 @@ final class ProductRestService[F[_]](
 
   private val categoryService: HttpService[F] =
     HttpServiceWithErrorHandling[F] {
-      case GET -> Root / "category" =>
+      case GET -> Root / "category" :? SexMatcher(s) =>
         for {
-          categories <- productAlgebra.getCategories
+          sex <- Sex.fromString(s).left.map(_.message) match {
+            case Left(e) => F.raiseError[Sex](InvalidInputFailure(e))
+            case Right(s) => F.pure(s)
+          }
+          categories <- productAlgebra.getCategories(sex)
           resp <- Ok(categories)
         } yield resp
     }
