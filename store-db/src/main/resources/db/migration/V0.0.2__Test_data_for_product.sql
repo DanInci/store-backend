@@ -1,6 +1,6 @@
-INSERT INTO category (name) VALUES ('Tops');
-INSERT INTO category (name) VALUES ('Bottoms');
-INSERT INTO category (name) VALUES ('Full pieces');
+INSERT INTO category (name, sex) VALUES ('Tops', 'F');
+INSERT INTO category (name, sex) VALUES ('Bottoms', 'F');
+INSERT INTO category (name, sex) VALUES ('Full pieces', 'F');
 
 INSERT INTO product (c_category_id, name, price, discount, availability_on_command, description, care) VALUES (3, 'La vie en rose dress', 32.99, 0.0, false, ARRAY['Mesh body suit with dropped arm holes', '84% Nylon / 16% Spandex'], ARRAY['Hand rinse, dry in shade only', 'Avoid rough surfaces, lotions, sunscreens, and overly chlorinated pools', 'Suits should be worn with care']);
 INSERT INTO product (c_category_id, name, price, discount, availability_on_command, description, care) VALUES (3, 'Valentina dress', 13.99, 0.9, true, ARRAY['Mesh body suit with dropped arm holes', '84% Nylon / 16% Spandex'], ARRAY['Hand rinse, dry in shade only', 'Avoid rough surfaces, lotions, sunscreens, and overly chlorinated pools', 'Suits should be worn with care']);

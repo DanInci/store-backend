@@ -1,6 +1,6 @@
-package store.core.entity
+package store.algebra.product.entity.component
 
-import store.core.CategoryID
+import store.algebra.product.CategoryID
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -8,5 +8,6 @@ import store.core.CategoryID
   */
 final case class Category(
     categoryId: CategoryID,
-    name: String
+    name: String,
+    sex: Option[Sex]
 ) extends Serializable

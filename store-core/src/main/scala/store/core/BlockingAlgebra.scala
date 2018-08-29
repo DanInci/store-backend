@@ -1,4 +1,4 @@
-package store.db
+package store.core
 
 import io.chrisdavenport.linebacker.DualContext
 import store.effects._

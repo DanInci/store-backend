@@ -6,7 +6,6 @@ import org.http4s.dsl._
 import store.algebra.product._
 import store.effects._
 import store.algebra.product.entity._
-import store.core._
 import store.http._
 
 /**

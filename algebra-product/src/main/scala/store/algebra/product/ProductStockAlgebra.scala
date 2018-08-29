@@ -3,7 +3,6 @@ package store.algebra.product
 import doobie.util.transactor.Transactor
 import store.algebra.content.ContentStorageAlgebra
 import store.algebra.product.entity.Stock
-import store.core.ProductID
 import store.db.DatabaseContext
 
 /**

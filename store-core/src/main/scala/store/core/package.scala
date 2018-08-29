@@ -6,12 +6,6 @@ package store
   */
 package object core {
 
-  object ProductID extends PhantomType[Long]
-  type ProductID = ProductID.Type
-
-  object CategoryID extends PhantomType[Int]
-  type CategoryID = CategoryID.Type
-
   object Link extends PhantomType[String]
   type Link = Link.Type
 

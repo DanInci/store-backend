@@ -2,9 +2,9 @@ package store.algebra.product
 
 import doobie.util.transactor.Transactor
 import store.algebra.content.ContentStorageAlgebra
+import store.algebra.product.entity.component.Category
 import store.algebra.product.entity.{StoreProduct, StoreProductDefinition}
-import store.core.entity.{Category, PagingInfo}
-import store.core._
+import store.core.entity.PagingInfo
 import store.db.DatabaseContext
 
 /**

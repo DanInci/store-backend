@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 import store.algebra.order._
 import store.algebra.order.entity._
 import store.algebra.order.entity.component._
-import store.algebra.product.{Count, Price}
-import store.algebra.product.entity.component.{Discount, ProductSize}
+import store.algebra.product._
+import store.algebra.product.entity.component._
 import store.core.entity.Email
 import store.json._
 
@@ -15,6 +15,21 @@ import store.json._
   * @since 20/08/2018
   */
 trait OrderServiceJSON extends StoreJSON {
+
+  implicit val productIDCirceCodec: Codec[ProductID] = Codec.instance[ProductID](
+    encode = Encoder.apply[Long].contramap(ProductID.unapply),
+    decode = Decoder.apply[Long].map(ProductID.apply)
+  )
+
+  implicit val categoryIDCirceCodec: Codec[CategoryID] = Codec.instance[CategoryID](
+    encode = Encoder.apply[Int].contramap(CategoryID.unapply),
+    decode = Decoder.apply[Int].map(CategoryID.apply)
+  )
+
+  implicit val sexCirceCodec: Codec[Sex] = Codec.instance[Sex](
+    encode = Encoder.apply[String].contramap(sex => sex.productPrefix),
+    decode = Decoder.apply[String].emap(s => Sex.fromString(s).left.map(_.message))
+  )
 
   implicit val orderIDCirceCodec: Codec[OrderID] = Codec.instance[OrderID](
     encode = Encoder.apply[Long].contramap(OrderID.unapply),
@@ -169,6 +184,8 @@ trait OrderServiceJSON extends StoreJSON {
 
   implicit val orderDefinitionCodec: Codec[OrderDefinition] =
     derive.codec[OrderDefinition]
+
+  implicit val categoryCodec: Codec[Category] = derive.codec[Category]
 
   implicit val orderCodec: Codec[Order] = derive.codec[Order]
 

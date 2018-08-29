@@ -25,7 +25,7 @@ final class ProductRestService[F[_]](
   private object ProductNameMatcher
       extends OptionalQueryParamDecoderMatcher[String]("name")
   private object ProductCategoryMatcher
-      extends OptionalMultiQueryParamDecoderMatcher[CategoryID]("c")
+      extends OptionalMultiQueryParamDecoderMatcher[Int]("c")
   private object PageOffsetMatcher
       extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
   private object PageLimitMatcher
@@ -52,7 +52,7 @@ final class ProductRestService[F[_]](
       for {
         products <- productAlgebra.getProducts(
           name,
-          categories.toOption.getOrElse(Nil),
+          categories.toOption.getOrElse(Nil).map(CategoryID.apply),
           PagingInfo(offset, limit))
         resp <- Ok(products)
       } yield resp

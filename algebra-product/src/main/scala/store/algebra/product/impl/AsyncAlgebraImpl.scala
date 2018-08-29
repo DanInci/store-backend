@@ -5,13 +5,13 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import store.effects._
-import store.db.{BlockingAlgebra, DatabaseContext}
+import store.db.DatabaseContext
 import store.algebra.content._
 import store.algebra.content.entity.ContentDB
 import store.algebra.product.entity._
 import store.algebra.product._
-import store.algebra.product.entity.component.{ImageFile, ImageFileLink}
-import store.core._
+import store.algebra.product.entity.component._
+import store.core.BlockingAlgebra
 import store.core.entity._
 
 /**
@@ -29,7 +29,6 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     with BlockingAlgebra[F] {
 
   import store.algebra.product.db.ProductSql._
-  import store.algebra.content.impl.ContentSql
 
   private lazy val _productFolder = "products"
 
@@ -53,7 +52,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       _ <- {
         val q = for {
           _ <- imageFilesDB
-            .map(i => ContentSql.addContentToProduct(i, productId))
+            .map(i => addContentToProduct(i, productId))
             .sequence
           _ <- productDefinition.stocks
             .map(s => addStockToProduct(s, productId))
@@ -77,7 +76,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
           imagesDBList <- productsDb
             .map(
               p =>
-                ContentSql.findContentByProductID(p.productId, ImageFile.format)
+                findContentByProductID(p.productId, ImageFile.format)
             )
             .sequence
           stocksList <- productsDb
@@ -113,7 +112,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         val q = for {
           productDB <- findById(productId).flatMap(
             exists(_, NotFoundFailure(s"Product not found wih id $productId")))
-          imagesDB <- ContentSql.findContentByProductID(productId,
+          imagesDB <- findContentByProductID(productId,
                                                         ImageFile.format)
           stocks <- findStocksByProductID(productDB.productId)
         } yield (StoreProduct.fromStoreProductDB(productDB, stocks), imagesDB)
@@ -134,7 +133,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       shouldDeleteFiles <- {
         val q = for {
           _ <- deleteStockByProductID(productId)
-          _ <- ContentSql.deleteContentByProductID(productId)
+          _ <- deleteContentByProductID(productId)
           affectedRows <- deleteProduct(productId)
         } yield affectedRows == 1
         transact(q)

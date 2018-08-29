@@ -4,8 +4,7 @@ import better.files.File
 import better.files.File.currentWorkingDirectory
 import cats.effect.Async
 import store.algebra.content._
-import store.core.Link
-import store.db.BlockingAlgebra
+import store.core.{BlockingAlgebra, Link}
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com

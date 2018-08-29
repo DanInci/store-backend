@@ -4,11 +4,12 @@ import store.core._
 import doobie._
 import doobie.implicits._
 import cats.implicits._
+import store.algebra.content.Format
+import store.algebra.content.entity.ContentDB
 import store.algebra.product._
 import store.algebra.product.db.entity._
 import store.algebra.product.entity._
-import store.algebra.product.entity.component.ProductSize
-import store.core.entity.Category
+import store.algebra.product.entity.component._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -19,8 +20,25 @@ object ProductSql extends ProductComposites {
   // CATEGORY QUERIES
 
   def findAllCategories: ConnectionIO[List[Category]] = {
-    sql"SELECT category_id, name FROM category".query[Category].to[List]
+    sql"SELECT category_id, name, sex FROM category".query[Category].to[List]
   }
+
+  // CONTENT QUERIES
+
+  def addContentToProduct(contentDB: ContentDB,
+                          productId: ProductID): ConnectionIO[Int] =
+    sql"INSERT INTO content (content_id, p_product_id, name) VALUES (${contentDB.contentId}, $productId, ${contentDB.name})".update.run
+
+  def findContentByProductID(productId: ProductID,
+                             format: Format): ConnectionIO[List[ContentDB]] = {
+    val whereClause = s"WHERE p_product_id=$productId AND content_id LIKE '%$format'"
+    (sql"SELECT content_id, name FROM content " ++ Fragment.const(whereClause))
+      .query[ContentDB]
+      .to[List]
+  }
+
+  def deleteContentByProductID(productId: ProductID): ConnectionIO[Int] =
+    sql"DELETE FROM content WHERE p_product_id=$productId".update.run
 
   // PRODUCT QUERIES
 

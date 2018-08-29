@@ -12,6 +12,21 @@ import store.algebra.product.entity.component._
   */
 trait ProductServiceJSON extends StoreJSON {
 
+  implicit val productIDCirceCodec: Codec[ProductID] = Codec.instance[ProductID](
+    encode = Encoder.apply[Long].contramap(ProductID.unapply),
+    decode = Decoder.apply[Long].map(ProductID.apply)
+  )
+
+  implicit val categoryIDCirceCodec: Codec[CategoryID] = Codec.instance[CategoryID](
+    encode = Encoder.apply[Int].contramap(CategoryID.unapply),
+    decode = Decoder.apply[Int].map(CategoryID.apply)
+  )
+
+  implicit val sexCirceCodec: Codec[Sex] = Codec.instance[Sex](
+    encode = Encoder.apply[String].contramap(sex => sex.productPrefix),
+    decode = Decoder.apply[String].emap(s => Sex.fromString(s).left.map(_.message))
+  )
+
   implicit val productSizeCirceCodec: Codec[ProductSize] = Codec.instance[ProductSize](
     encode = Encoder.apply[String].contramap(size => size.productPrefix),
     decode = Decoder.apply[String].emap(s => ProductSize.fromString(s).left.map(_.message))
@@ -57,6 +72,8 @@ trait ProductServiceJSON extends StoreJSON {
   implicit val imageFileLinkCodec: Codec[ImageFileLink] = derive.codec[ImageFileLink]
 
   implicit val imageFileDefinitionCodec: Codec[ImageFileDefinition] = derive.codec[ImageFileDefinition]
+
+  implicit val categoryCodec: Codec[Category] = derive.codec[Category]
 
   implicit val stockCodec: Codec[Stock] = derive.codec[Stock]
 

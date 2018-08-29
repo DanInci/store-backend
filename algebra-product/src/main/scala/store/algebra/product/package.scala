@@ -8,6 +8,12 @@ import store.core.PhantomType
   */
 package object product {
 
+  object ProductID extends PhantomType[Long]
+  type ProductID = ProductID.Type
+
+  object CategoryID extends PhantomType[Int]
+  type CategoryID = CategoryID.Type
+
   object Count extends PhantomType[Int]
   type Count = Count.Type
 

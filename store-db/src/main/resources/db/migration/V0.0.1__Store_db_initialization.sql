@@ -55,7 +55,8 @@ ALTER TABLE "buyer" ADD CONSTRAINT pkbuyer
 CREATE TABLE "category"
 (
 	category_id OID DEFAULT nextval('category_category_id_seq'::regclass) NOT NULL,
-	name VARCHAR(100) NOT NULL
+	name VARCHAR(100) NOT NULL,
+	sex VARCHAR(1) NOT NULL
 );
 
 /* Add Primary Key */

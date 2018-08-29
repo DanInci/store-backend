@@ -9,8 +9,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model._
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import store.algebra.content._
-import store.core.Link
-import store.db.BlockingAlgebra
+import store.core.{BlockingAlgebra, Link}
 import store.effects.Async
 
 import scala.collection.JavaConverters

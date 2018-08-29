@@ -3,8 +3,6 @@ package store.algebra.product.entity
 import store.algebra.product._
 import store.algebra.product.db.entity.StoreProductDB
 import store.algebra.product.entity.component._
-import store.core._
-import store.core.entity._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -13,6 +11,7 @@ import store.core.entity._
 final case class StoreProduct(
     productId: ProductID,
     category: Category,
+    sex: Sex,
     name: String,
     images: List[ImageFileLink],
     stocks: List[Stock],
@@ -30,7 +29,8 @@ object StoreProduct {
       stocks: List[Stock]
   ): StoreProduct =
     new StoreProduct(spdb.productId,
-                     spdb.category,
+                     spdb.category.copy(sex = None),
+                     spdb.sex,
                      spdb.name,
                      Nil,
                      stocks,

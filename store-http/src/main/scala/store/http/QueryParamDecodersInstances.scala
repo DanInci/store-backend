@@ -14,7 +14,4 @@ trait QueryParamDecodersInstances {
 
   implicit val limitOffsetQueryParamDecoder: QueryParamDecoder[PageLimit] =
     QueryParamDecoder.intQueryParamDecoder.map(PageLimit.apply)
-
-  implicit val categoryIDQueryParamDecoder: QueryParamDecoder[CategoryID] =
-    QueryParamDecoder.intQueryParamDecoder.map(CategoryID.apply)
 }

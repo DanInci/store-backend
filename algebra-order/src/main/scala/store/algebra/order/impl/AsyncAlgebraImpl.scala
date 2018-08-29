@@ -3,7 +3,8 @@ package store.algebra.order.impl
 import doobie.util.transactor.Transactor
 import store.algebra.order.entity.{Order, OrderDefinition}
 import store.algebra.order.{OrderAlgebra, OrderID, OrderToken}
-import store.db.{BlockingAlgebra, DatabaseContext}
+import store.core.BlockingAlgebra
+import store.db.DatabaseContext
 import store.effects._
 
 /**

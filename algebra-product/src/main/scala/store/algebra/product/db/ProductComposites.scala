@@ -2,9 +2,9 @@ package store.algebra.product.db
 
 import doobie._
 import doobie.postgres.implicits._
-import store.algebra.content.ContentID
+import store.algebra.content._
 import store.algebra.product._
-import store.algebra.product.entity.component.{Discount, ProductSize}
+import store.algebra.product.entity.component._
 import store.core._
 import store.effects._
 
@@ -19,6 +19,11 @@ trait ProductComposites {
     ProductID.unapply
   )
 
+  implicit val sexMeta: Meta[Sex] = Meta[String].xmap(
+    s => Sex.fromString(s).unsafeGet(),
+    s => s.productPrefix
+  )
+
   implicit val categoryIDMeta: Meta[CategoryID] = Meta[Int].xmap(
     CategoryID.apply,
     CategoryID.unapply
@@ -27,6 +32,11 @@ trait ProductComposites {
   implicit val contentIDMeta: Meta[ContentID] = Meta[String].xmap(
     ContentID.apply,
     ContentID.unapply
+  )
+
+  implicit val formatMeta: Meta[Format] = Meta[String].xmap(
+    Format.apply,
+    Format.unapply
   )
 
   implicit val pageOffsetMeta: Meta[PageOffset] = Meta[Int].xmap(
