@@ -108,14 +108,13 @@ final private[product] class AsyncAlgebraImpl[F[_]](
 
   override def getProduct(productId: ProductID): F[StoreProduct] = {
     for {
-      (product, imageFilesDB) <- {
-        val q = for {
+      (product, imageFilesDB) <- transact {
+        for {
           productDB <- findById(productId).flatMap(
             exists(_, NotFoundFailure(s"Product not found wih id $productId")))
           imagesDB <- findContentByProductID(productId, ImageFile.format)
           stocks <- findStocksByProductID(productDB.productId)
         } yield (StoreProduct.fromStoreProductDB(productDB, stocks), imagesDB)
-        transact(q)
       }
       images <- imageFilesDB
         .map(
@@ -160,7 +159,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         currentStock <- findStockByProductIdAndSize(productId, stock.size)
         _ <- currentStock match {
           case Some(cs) =>
-            updateStockByProductIDAndSize(Count(cs.count + stock.count),
+            updateStockByProductIDAndSize(cs.count + stock.count,
                                           productId,
                                           stock.size)
           case None => addStockToProduct(stock, productId)
@@ -176,13 +175,14 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         currentStock <- findStockByProductIdAndSize(productId, stock.size)
         _ <- currentStock match {
           case Some(cs) =>
-            val updatedCount = Count(cs.count - stock.count)
-            if (updatedCount < 0)
-              AsyncConnectionIO.raiseError(
-                InvalidInputFailure(
-                  "Can not remove stock because it will be negative"))
-            else
-              updateStockByProductIDAndSize(updatedCount, productId, stock.size)
+            cs.count - stock.count match {
+              case Left(_) =>
+                AsyncConnectionIO.raiseError(
+                  InvalidInputFailure(
+                    "Can not remove stock because it will be negative"))
+              case Right(c) =>
+                updateStockByProductIDAndSize(c, productId, stock.size)
+            }
           case None =>
             AsyncConnectionIO.raiseError(
               InvalidInputFailure("Can not remove stock if it does not exist"))

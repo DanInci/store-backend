@@ -1,7 +1,6 @@
 package store.algebra.product.entity
 
-import store.algebra.product.Count
-import store.algebra.product.entity.component.ProductSize
+import store.algebra.product.entity.component._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com

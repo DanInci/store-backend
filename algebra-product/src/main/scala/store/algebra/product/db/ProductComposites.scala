@@ -20,8 +20,8 @@ trait ProductComposites {
   )
 
   implicit val sexMeta: Meta[Sex] = Meta[String].xmap(
-    s => Sex.fromString(s).unsafeGet(),
-    s => s.productPrefix
+    Sex.fromString(_).unsafeGet(),
+    _.productPrefix
   )
 
   implicit val categoryIDMeta: Meta[CategoryID] = Meta[Int].xmap(
@@ -50,13 +50,13 @@ trait ProductComposites {
   )
 
   implicit val productSizeMeta: Meta[ProductSize] = Meta[String].xmap(
-    s => ProductSize.fromString(s).unsafeGet(),
-    ps => ps.productPrefix
+    ProductSize.fromString(_).unsafeGet(),
+    _.productPrefix
   )
 
   implicit val countMeta: Meta[Count] = Meta[Int].xmap(
-    Count.apply,
-    Count.unapply
+    Count.apply(_).unsafeGet(),
+    _.count
   )
 
   implicit val priceMeta: Meta[Price] = Meta[Double].xmap(

@@ -11,13 +11,15 @@ final case class EmailConfig(
     from: String,
     user: String,
     password: String,
-    host: String,
-    port: Int,
+    smtpHost: String,
+    smtpPort: Int,
+    imapHost: String,
+    imapPort: Int,
     auth: Boolean,
     startTLS: Boolean
 )
 
 object EmailConfig extends ConfigLoader[EmailConfig] {
-  override def default[F[_] : Sync]: F[EmailConfig] =
+  override def default[F[_]: Sync]: F[EmailConfig] =
     this.load("store.email")
 }

@@ -10,6 +10,9 @@ import store.effects.Async
 trait EmailAlgebra[F[_]] {
 
   def sendEmail(to: Email, subject: Subject, content: Content): F[Unit]
+
+  def receiveMail(from: Email, subject: Subject, content: Content): F[Unit]
+
 }
 object EmailAlgebra {
 

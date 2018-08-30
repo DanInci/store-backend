@@ -31,6 +31,9 @@ package object order {
   object EndDate extends PhantomType[LocalDate]
   type EndDate = EndDate.Type
 
+  object FullName extends PhantomType[String]
+  type FullName = FullName.Type
+
   object FirstName extends PhantomType[String]
   type FirstName = FirstName.Type
 

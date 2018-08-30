@@ -16,4 +16,6 @@ object Email {
       Result.fail(InvalidInputFailure("Email not valid"))
     }
 }
-final case class Email private (emailStr: String) extends Serializable
+final case class Email private (emailStr: String) extends Serializable {
+  override def toString: String = emailStr
+}

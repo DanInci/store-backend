@@ -6,7 +6,7 @@ import busymachines.core.NotFoundFailure
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
-import store.algebra.email.EmailAlgebra
+import store.algebra.email._
 import store.algebra.order._
 import store.algebra.order.entity._
 import store.core.entity.PagingInfo
@@ -27,25 +27,35 @@ final class OrderRestService[F[_]](
     with ErrorHandlingInstances[F]
     with OrderServiceJSON {
 
-  private object OrderCodeMatcher extends QueryParamDecoderMatcher[String]("code")
-  private object StartDateMatcher extends OptionalQueryParamDecoderMatcher[LocalDate]("startDate")
-  private object EndDateMatcher extends OptionalQueryParamDecoderMatcher[LocalDate]("endDate")
+  private object OrderCodeMatcher
+      extends QueryParamDecoderMatcher[String]("code")
+  private object StartDateMatcher
+      extends OptionalQueryParamDecoderMatcher[LocalDate]("startDate")
+  private object EndDateMatcher
+      extends OptionalQueryParamDecoderMatcher[LocalDate]("endDate")
   private object PageOffsetMatcher
-    extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
+      extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
   private object PageLimitMatcher
-    extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
+      extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
 
-  val orderPlacementService: HttpService[F] = HttpServiceWithErrorHandling {
-    case request @ POST -> Root / "order" =>
-      for {
-        orderDef <- request.as[OrderDefinition]
-        token <- orderAlgebra.placeOrder(orderDef)
-        resp <- Created(token)
-      } yield resp
-  }
+  private val orderPlacementService: HttpService[F] =
+    HttpServiceWithErrorHandling {
+      case request @ POST -> Root / "order" =>
+        for {
+          orderDef <- request.as[OrderDefinition]
+          token <- orderAlgebra.placeOrder(orderDef)
+          subject = Subject(
+            s"Congrats ${orderDef.buyer.firstName}. Your order has been placed !")
+          content = Content(
+            s"Your order has been placed.<br>You can see order details with this code: $token")
+          _ <- emailAlgebra.sendEmail(orderDef.buyer.email, subject, content)
+          resp <- Created(token)
+        } yield resp
+    }
 
-  val orderService: HttpService[F] = HttpServiceWithErrorHandling {
-    case GET -> Root / "order" :? StartDateMatcher(startDate) +& EndDateMatcher(endDate) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
+  private val orderService: HttpService[F] = HttpServiceWithErrorHandling {
+    case GET -> Root / "order" :? StartDateMatcher(startDate) +& EndDateMatcher(
+          endDate) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
       for {
         orders <- orderAlgebra.getOrders(
           startDate.map(StartDate.apply),
@@ -59,25 +69,40 @@ final class OrderRestService[F[_]](
       for {
         order <- orderAlgebra.getOrder(OrderID(id)).flatMap {
           case Some(o) => F.pure(o)
-          case None => F.raiseError[Order](NotFoundFailure(s"Order with id $id not found"))
+          case None =>
+            F.raiseError[Order](NotFoundFailure(s"Order with id $id not found"))
         }
         resp <- Ok(order)
       } yield resp
-    case GET -> Root / "order" :? OrderCodeMatcher(code) =>
+
+    case GET -> Root / "order" / "placed" :? OrderCodeMatcher(code) =>
       for {
         order <- orderAlgebra.getOrder(OrderToken(code)).flatMap {
           case Some(o) => F.pure(o)
-          case None => F.raiseError[Order](NotFoundFailure(s"Order was not found"))
+          case None =>
+            F.raiseError[Order](NotFoundFailure(s"Order was not found"))
         }
         resp <- Ok(order)
       } yield resp
   }
 
+  private val shippingMethodService: HttpService[F] =
+    HttpServiceWithErrorHandling {
+      case GET -> Root / "shipping" =>
+        for {
+          shippingMethods <- orderAlgebra.getShippingMethods
+          resp <- Ok(shippingMethods)
+        } yield resp
+    }
+
   val service: HttpService[F] = {
-    NonEmptyList.of(
-      orderPlacementService,
-      orderService
-    ).reduceK
+    NonEmptyList
+      .of(
+        orderPlacementService,
+        orderService,
+        shippingMethodService
+      )
+      .reduceK
   }
 
 }

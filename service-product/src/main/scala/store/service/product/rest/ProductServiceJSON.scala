@@ -33,8 +33,8 @@ trait ProductServiceJSON extends StoreJSON {
   )
 
   implicit val countCirceCodec: Codec[Count] = Codec.instance[Count](
-    encode = Encoder.apply[Int].contramap(Count.unapply),
-    decode = Decoder.apply[Int].map(Count.apply)
+    encode = Encoder.apply[Int].contramap(_.count),
+    decode = Decoder.apply[Int].emap(Count.apply(_).left.map(_.message))
   )
 
   implicit val priceCirceCodec: Codec[Price] = Codec.instance[Price](

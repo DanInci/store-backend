@@ -2,6 +2,7 @@ package store.service.order.rest
 
 import java.time.LocalDateTime
 
+import store.algebra.email.Content
 import store.algebra.order._
 import store.algebra.order.entity._
 import store.algebra.order.entity.component._
@@ -16,19 +17,22 @@ import store.json._
   */
 trait OrderServiceJSON extends StoreJSON {
 
-  implicit val productIDCirceCodec: Codec[ProductID] = Codec.instance[ProductID](
-    encode = Encoder.apply[Long].contramap(ProductID.unapply),
-    decode = Decoder.apply[Long].map(ProductID.apply)
-  )
+  implicit val productIDCirceCodec: Codec[ProductID] =
+    Codec.instance[ProductID](
+      encode = Encoder.apply[Long].contramap(ProductID.unapply),
+      decode = Decoder.apply[Long].map(ProductID.apply)
+    )
 
-  implicit val categoryIDCirceCodec: Codec[CategoryID] = Codec.instance[CategoryID](
-    encode = Encoder.apply[Int].contramap(CategoryID.unapply),
-    decode = Decoder.apply[Int].map(CategoryID.apply)
-  )
+  implicit val categoryIDCirceCodec: Codec[CategoryID] =
+    Codec.instance[CategoryID](
+      encode = Encoder.apply[Int].contramap(CategoryID.unapply),
+      decode = Decoder.apply[Int].map(CategoryID.apply)
+    )
 
   implicit val sexCirceCodec: Codec[Sex] = Codec.instance[Sex](
     encode = Encoder.apply[String].contramap(sex => sex.productPrefix),
-    decode = Decoder.apply[String].emap(s => Sex.fromString(s).left.map(_.message))
+    decode =
+      Decoder.apply[String].emap(s => Sex.fromString(s).left.map(_.message))
   )
 
   implicit val orderIDCirceCodec: Codec[OrderID] = Codec.instance[OrderID](
@@ -86,15 +90,15 @@ trait OrderServiceJSON extends StoreJSON {
 
   implicit val productSizeCirceCodec: Codec[ProductSize] =
     Codec.instance[ProductSize](
-      encode = Encoder.apply[String].contramap(size => size.productPrefix),
+      encode = Encoder.apply[String].contramap(_.productPrefix),
       decode = Decoder
         .apply[String]
-        .emap(s => ProductSize.fromString(s).left.map(_.message))
+        .emap(ProductSize.fromString(_).left.map(_.message))
     )
 
   implicit val countCirceCodec: Codec[Count] = Codec.instance[Count](
-    encode = Encoder.apply[Int].contramap(Count.unapply),
-    decode = Decoder.apply[Int].map(Count.apply)
+    encode = Encoder.apply[Int].contramap(_.count),
+    decode = Decoder.apply[Int].emap(Count.apply(_).left.map(_.message))
   )
 
   implicit val priceCirceCodec: Codec[Price] = Codec.instance[Price](
@@ -166,10 +170,22 @@ trait OrderServiceJSON extends StoreJSON {
       decode = Decoder.apply[String].map(BillingPhoneNumber.apply)
     )
 
-  implicit val orderToken: Codec[OrderToken] = Codec.instance[OrderToken](
+  implicit val orderTokenCirceCodec: Codec[OrderToken] = Codec.instance[OrderToken](
     encode = Encoder.apply[String].contramap(OrderToken.unapply),
     decode = Decoder.apply[String].map(OrderToken.apply)
   )
+
+  implicit val contentCirceCodec: Codec[Content] = Codec.instance[Content](
+    encode = Encoder.apply[String].contramap(Content.unapply),
+    decode = Decoder.apply[String].map(Content.apply)
+  )
+
+  implicit val fullNameCirceCodec: Codec[FullName] = Codec.instance[FullName](
+    encode = Encoder.apply[String].contramap(FullName.unapply),
+    decode = Decoder.apply[String].map(FullName.apply)
+  )
+
+  implicit val contactRequestCodec: Codec[ContactRequest] = derive.codec[ContactRequest]
 
   implicit val buyerCodec: Codec[Buyer] = derive.codec[Buyer]
 

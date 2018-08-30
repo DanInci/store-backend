@@ -31,27 +31,38 @@ object OrderSql extends OrderComposites {
       billingPhoneNumber: BillingPhoneNumber
   )
 
-  def findAllByPlacedBetween(startDate: StartDate,
-                             endDate: EndDate,
+  def findAllByPlacedBetween(startDate: Option[StartDate],
+                             endDate: Option[EndDate],
                              offset: PageOffset,
-                             limit: PageLimit): ConnectionIO[List[OrderDB]] =
-    sql"""SELECT o_order_id, b.email, b.subscribed, b.firstname, b.lastname, b.address, b.city, b.county, b.country, b.postal_code, b.phone_number, placed_at, sm.shipping_method_id, sm.name, billing_firstname, billing_lastname, billing_address, billing_city, billing_county, billing_country, billing_postal_code, billing_phone_number
-         | FROM order o
+                             limit: PageLimit): ConnectionIO[List[OrderDB]] = {
+    val whereClause = if (startDate.isDefined && endDate.isDefined) {
+      s"WHERE placed_at BETWEEN ${startDate.get} AND ${endDate.get}"
+    } else if (startDate.isDefined) {
+      s"WHERE placed_at >= ${startDate.get}"
+    } else if (endDate.isDefined) {
+      s"WHERE placed_at <= ${endDate.get}"
+    } else ""
+
+    (sql"""SELECT o_order_id, b.email, b.subscribed, b.firstname, b.lastname, b.address, b.city, b.county, b.country, b.postal_code, b.phone_number, placed_at, sm.shipping_method_id, sm.name, billing_firstname, billing_lastname, billing_address, billing_city, billing_county, billing_country, billing_postal_code, billing_phone_number
+         | FROM "order" o
          | JOIN buyer b on o.order_id = b.o_order_id
-         | JOIN shipping_method sm on o.sm_shipping_method_id = sm.shipping_method_id
-         | WHERE placed_at BETWEEN $startDate AND $endDate
-         | LIMIT $limit OFFSET ${offset * limit}""".query[OrderDB].to[List]
+         | JOIN shipping_method sm on o.sm_shipping_method_id = sm.shipping_method_id""".stripMargin
+      ++ Fragment.const(whereClause) ++
+      sql" LIMIT $limit OFFSET ${offset * limit}")
+      .query[OrderDB]
+      .to[List]
+  }
 
   def findById(id: OrderID): ConnectionIO[Option[OrderDB]] =
     sql"""SELECT o_order_id, b.email, b.subscribed, b.firstname, b.lastname, b.address, b.city, b.county, b.country, b.postal_code, b.phone_number, placed_at, sm.shipping_method_id, sm.name, billing_firstname, billing_lastname, billing_address, billing_city, billing_county, billing_country, billing_postal_code, billing_phone_number
-         | FROM order o
+         | FROM "order" o
          | JOIN buyer b on o.order_id = b.o_order_id
          | JOIN shipping_method sm on o.sm_shipping_method_id = sm.shipping_method_id
          | WHERE o_order_id = $id""".stripMargin.query[OrderDB].option
 
   def findByOrderToken(token: OrderToken): ConnectionIO[Option[OrderDB]] =
     sql"""SELECT o_order_id, b.email, b.subscribed, b.firstname, b.lastname, b.address, b.city, b.county, b.country, b.postal_code, b.phone_number, placed_at, sm.shipping_method_id, sm.name, billing_firstname, billing_lastname, billing_address, billing_city, billing_county, billing_country, billing_postal_code, billing_phone_number
-         | FROM order o
+         | FROM "order" o
          | JOIN buyer b on o.order_id = b.o_order_id
          | JOIN shipping_method sm on o.sm_shipping_method_id = sm.shipping_method_id
          | WHERE order_token = $token""".stripMargin.query[OrderDB].option
@@ -107,6 +118,14 @@ object OrderSql extends OrderComposites {
          | WHERE ordered_product_id = $id""".stripMargin
       .query[OrderedProduct]
       .option
+
+  def findShippingMethodById(id: ShippingMethodID): ConnectionIO[Option[ShippingMethod]] =
+    sql"""SELECT shipping_method_id, name
+         | FROM shipping_method
+         | WHERE shipping_method_id=$id""".stripMargin.query[ShippingMethod].option
+
+  def findAllShippingMethods: ConnectionIO[List[ShippingMethod]] =
+    sql"SELECT shipping_method_id, name FROM shipping_method".query[ShippingMethod].to[List]
 
   def findOrder(
       req: => ConnectionIO[Option[OrderDB]]): ConnectionIO[Option[Order]] =

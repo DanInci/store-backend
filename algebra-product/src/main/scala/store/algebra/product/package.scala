@@ -14,9 +14,6 @@ package object product {
   object CategoryID extends PhantomType[Int]
   type CategoryID = CategoryID.Type
 
-  object Count extends PhantomType[Int]
-  type Count = Count.Type
-
   object Price extends PhantomType[Double]
   type Price = Price.Type
 

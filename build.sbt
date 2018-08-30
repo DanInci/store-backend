@@ -232,7 +232,7 @@ def commonSettings: Seq[Setting[_]] = Seq(
     spire,
     betterFiles,
     amazonSDKS3
-  ),
+  ) ++ tsec,
   /*
    * Eliminates useless, unintuitive, and sometimes broken additions of `withFilter`
    * when using generator arrows in for comprehensions. e.g.
@@ -415,6 +415,28 @@ lazy val doobiePostgres = "org.tpolecat" %% "doobie-postgres" % doobieVersion wi
 lazy val doobieTK = "org.tpolecat" %% "doobie-specs2" % doobieVersion % Test withSources () // specs2 support for typechecking statements.
 
 lazy val flyway = "org.flywaydb" % "flyway-core" % "4.2.0" withSources ()
+
+//============================================================================================
+//========================================  security  ========================================
+//============================================================================================
+
+//https://github.com/jmcardon/tsec
+lazy val tsecV = "0.0.1-M11"
+
+lazy val tsec = Seq(
+  "io.github.jmcardon" %% "tsec-common"        % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-password"      % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-cipher-jca"    % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-cipher-bouncy" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-mac"           % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-signatures"    % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-hash-jca"      % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-hash-bouncy"   % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-libsodium"     % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-jwt-mac"       % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-jwt-sig"       % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-http4s"        % tsecV withSources (),
+)
 
 //============================================================================================
 //==========================================  math ===========================================

@@ -8,7 +8,7 @@ import store.core._
   */
 trait StoreCoreJSON {
 
-  implicit val lLinkCirceCodec: Codec[Link] = Codec.instance[Link](
+  implicit val linkCirceCodec: Codec[Link] = Codec.instance[Link](
     encode = Encoder.apply[String].contramap(Link.unapply),
     decode = Decoder.apply[String].map(Link.apply)
   )

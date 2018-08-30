@@ -105,7 +105,7 @@ object ProductSql extends ProductComposites {
   def findStockByProductIdAndSize(
       productId: ProductID,
       productSize: ProductSize): ConnectionIO[Option[Stock]] = {
-    sql"SELECT product_size, count FROM stock WHERE p_product_id=$productId AND product_size=$productSize"
+    sql"SELECT product_size, available_count FROM stock WHERE p_product_id=$productId AND product_size=$productSize"
       .query[Stock]
       .option
   }
