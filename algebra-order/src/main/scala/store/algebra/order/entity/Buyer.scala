@@ -17,5 +17,5 @@ final case class Buyer(
     county: County,
     country: Country,
     postalCode: PostalCode,
-    phoneNumber: PhoneNumber
+    phoneNumber: Option[PhoneNumber]
 ) extends Serializable

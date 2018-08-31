@@ -33,7 +33,7 @@ CREATE TABLE "buyer"
 	buyer_id OID DEFAULT nextval('buyer_buyer_id_seq'::regclass) NOT NULL,
 	o_order_id OID NOT NULL,
 	email VARCHAR(100) NOT NULL,
-	subscribed BOOL DEFAULT false NOT NULL,
+	subscribed BOOL NOT NULL,
 	firstname VARCHAR(30) NOT NULL,
 	lastname VARCHAR(30) NOT NULL,
 	address VARCHAR(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE "buyer"
 	county VARCHAR(50) NOT NULL,
 	country VARCHAR(50) NOT NULL,
 	postal_code VARCHAR(10) NOT NULL,
-	phone_number VARCHAR(50) NOT NULL
+	phone_number VARCHAR(50) NULL
 );
 
 /* Add Primary Key */
@@ -94,7 +94,7 @@ CREATE TABLE "order"
 	billing_country VARCHAR(50) NOT NULL,
 	billing_county VARCHAR(50) NOT NULL,
 	billing_postal_code VARCHAR(10) NOT NULL,
-	billing_phone_number VARCHAR(50) NOT NULL,
+	billing_phone_number VARCHAR(50) NULL,
 	order_token VARCHAR(255) NOT NULL
 );
 
@@ -130,7 +130,7 @@ CREATE TABLE "product"
 	name VARCHAR(100) NOT NULL,
 	price DOUBLE PRECISION NOT NULL,
 	discount DOUBLE PRECISION NULL,
-	availability_on_command BOOL DEFAULT false NOT NULL,
+	availability_on_command BOOL NOT NULL,
 	description VARCHAR(255)[] NOT NULL,
 	care VARCHAR(255)[] NOT NULL
 );

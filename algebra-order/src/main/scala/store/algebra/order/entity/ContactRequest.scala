@@ -11,6 +11,6 @@ import store.core.entity.Email
 final case class ContactRequest(
     name: FullName,
     email: Email,
-    phoneNumber: PhoneNumber,
+    phoneNumber: Option[PhoneNumber],
     message: Content
 )

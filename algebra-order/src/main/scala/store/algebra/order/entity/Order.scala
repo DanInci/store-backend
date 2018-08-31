@@ -19,7 +19,7 @@ final case class OrderDefinition(
     billingCounty: BillingCounty,
     billingCountry: BillingCountry,
     billingPostalCode: BillingPostalCode,
-    billingPhoneNumber: BillingPhoneNumber
+    billingPhoneNumber: Option[BillingPhoneNumber]
 ) extends Serializable
 
 final case class Order(
@@ -35,7 +35,7 @@ final case class Order(
     billingCounty: BillingCounty,
     billingCountry: BillingCountry,
     billingPostalCode: BillingPostalCode,
-    billingPhoneNumber: BillingPhoneNumber
+    billingPhoneNumber: Option[BillingPhoneNumber]
 ) extends Serializable
 
 object Order {

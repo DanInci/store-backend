@@ -28,7 +28,7 @@ object OrderSql extends OrderComposites {
       billingCounty: BillingCounty,
       billingCountry: BillingCountry,
       billingPostalCode: BillingPostalCode,
-      billingPhoneNumber: BillingPhoneNumber
+      billingPhoneNumber: Option[BillingPhoneNumber]
   )
 
   def findAllByPlacedBetween(startDate: Option[StartDate],
@@ -119,13 +119,18 @@ object OrderSql extends OrderComposites {
       .query[OrderedProduct]
       .option
 
-  def findShippingMethodById(id: ShippingMethodID): ConnectionIO[Option[ShippingMethod]] =
+  def findShippingMethodById(
+      id: ShippingMethodID): ConnectionIO[Option[ShippingMethod]] =
     sql"""SELECT shipping_method_id, name
          | FROM shipping_method
-         | WHERE shipping_method_id=$id""".stripMargin.query[ShippingMethod].option
+         | WHERE shipping_method_id=$id""".stripMargin
+      .query[ShippingMethod]
+      .option
 
   def findAllShippingMethods: ConnectionIO[List[ShippingMethod]] =
-    sql"SELECT shipping_method_id, name FROM shipping_method".query[ShippingMethod].to[List]
+    sql"SELECT shipping_method_id, name FROM shipping_method"
+      .query[ShippingMethod]
+      .to[List]
 
   def findOrder(
       req: => ConnectionIO[Option[OrderDB]]): ConnectionIO[Option[Order]] =
