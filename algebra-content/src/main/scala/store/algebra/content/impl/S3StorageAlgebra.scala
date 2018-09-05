@@ -1,6 +1,7 @@
 package store.algebra.content.impl
 
 import java.io.ByteArrayInputStream
+import java.util.UUID
 
 import cats.implicits._
 import com.amazonaws._
@@ -46,7 +47,7 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
   }
 
   override def getContentLink(id: ContentID): F[Link] = F.delay {
-    Link(config.baseLink + "/" + config.bucketName + "/"+ id)
+    Link(config.baseLink + "/" + config.bucketName + "/" + id)
   }
 
   override def getContent(id: ContentID): F[BinaryContent] = block {
@@ -70,8 +71,8 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
                            content: BinaryContent): F[ContentID] = block {
     for {
       client <- _s3Client
-      contentId = ContentID(
-        path + Random.alphanumeric.take(25).mkString + "." + format)
+      uuid <- F.delay(UUID.randomUUID)
+      contentId = ContentID(path + uuid.toString + "." + format)
       inputStream = new ByteArrayInputStream(content)
       metaData = {
         val x = new ObjectMetadata()
