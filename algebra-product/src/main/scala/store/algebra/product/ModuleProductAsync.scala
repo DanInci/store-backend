@@ -21,6 +21,8 @@ trait ModuleProductAsync[F[_]] { this: ModuleContentAsync[F] =>
 
   def stockAlgebra: ProductStockAlgebra[F] = _moduleAlgebra
 
+  def promotionAlgebra: PromotionAlgebra[F] = _moduleAlgebra
+
   private lazy val _moduleAlgebra: ModuleProductAlgebra[F] =
     new impl.AsyncAlgebraImpl[F](contentStorageAlgebra = s3StorageAlgebra)
 

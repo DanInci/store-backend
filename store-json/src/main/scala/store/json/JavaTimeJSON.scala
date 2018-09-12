@@ -1,6 +1,6 @@
 package store.json
 
-import java.time.LocalDateTime
+import java.time.{LocalDate, LocalDateTime}
 
 import store.core.TimeFormatters
 
@@ -9,6 +9,11 @@ import store.core.TimeFormatters
   * @since 20/08/2018
   */
 trait JavaTimeJSON {
+
+  implicit val localDateCodec: Codec[LocalDate] = Codec.instance(
+    Encoder.apply[String].contramap(m => m.format(TimeFormatters.LocalDateFormatter)),
+    Decoder.apply[String].map(s =>  LocalDate.parse(s, TimeFormatters.LocalDateFormatter))
+  )
 
   implicit val localDateCirceCodec: Codec[LocalDateTime] = Codec.instance(
     Encoder.apply[String].contramap(m => m.format(TimeFormatters.LocalDateTimeFormatter)),

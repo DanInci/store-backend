@@ -1,14 +1,12 @@
 package store.algebra.content
 
-import store.core.Link
+import store.algebra.content.entity.Format
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 05/08/2018
   */
 trait ContentStorageAlgebra[F[_]] {
-
-  def getContentLink(id: ContentID): F[Link]
 
   def getContent(id: ContentID): F[BinaryContent]
 

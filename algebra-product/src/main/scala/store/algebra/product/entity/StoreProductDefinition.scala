@@ -1,5 +1,6 @@
 package store.algebra.product.entity
 
+import store.algebra.content.entity.Content
 import store.algebra.product._
 import store.algebra.product.entity.component._
 
@@ -10,7 +11,7 @@ import store.algebra.product.entity.component._
 final case class StoreProductDefinition(
     categoryId: CategoryID,
     name: String,
-    images: List[ImageFileDefinition],
+    images: List[Content],
     stocks: List[Stock],
     price: Price,
     discount: Discount,

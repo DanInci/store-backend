@@ -1,8 +1,12 @@
 package store.algebra.product.db
 
+import java.sql.Timestamp
+import java.time.LocalDate
+
 import doobie._
 import doobie.postgres.implicits._
 import store.algebra.content._
+import store.algebra.content.entity.Format
 import store.algebra.product._
 import store.algebra.product.entity.component._
 import store.core._
@@ -13,6 +17,21 @@ import store.effects._
   * @since 13/08/2018
   */
 trait ProductComposites {
+
+  implicit val promotionIDMeta: Meta[PromotionID] = Meta[Long].xmap(
+    PromotionID.apply,
+    PromotionID.unapply
+  )
+
+  implicit val titleMeta: Meta[Title] = Meta[String].xmap(
+    Title.apply,
+    Title.unapply
+  )
+
+  implicit val descriptionMeta: Meta[Description] = Meta[String].xmap(
+    Description.apply,
+    Description.unapply
+  )
 
   implicit val productIDMeta: Meta[ProductID] = Meta[Long].xmap(
     ProductID.apply,
@@ -35,8 +54,8 @@ trait ProductComposites {
   )
 
   implicit val formatMeta: Meta[Format] = Meta[String].xmap(
-    Format.apply,
-    Format.unapply
+    Format.fromString(_).unsafeGet(),
+    _.formatStr
   )
 
   implicit val pageOffsetMeta: Meta[PageOffset] = Meta[Int].xmap(
@@ -82,6 +101,16 @@ trait ProductComposites {
   implicit val careParagraphMeta: Meta[CareParagraph] = Meta[String].xmap(
     CareParagraph.apply,
     CareParagraph.unapply
+  )
+
+  implicit val localDateMeta: Meta[LocalDate] = Meta[Timestamp].xmap(
+    _.toLocalDateTime.toLocalDate,
+    t => Timestamp.valueOf(t.atStartOfDay())
+  )
+
+  implicit val promotionExpirationMeta: Meta[PromotionExpiration] = Meta[LocalDate].xmap(
+    PromotionExpiration.apply,
+    PromotionExpiration.unapply
   )
 
   implicit val careParagraphListMeta: Meta[List[CareParagraph]] = Meta[List[String]].xmap(

@@ -8,8 +8,7 @@ import store.config.ConfigLoader
   * @since 05/08/2018
   */
 final case class FileStorageConfig(
-    imagesFolder: String,
-    baseLink: String
+    contentFolder: String
 )
 
 object FileStorageConfig extends ConfigLoader[FileStorageConfig] {

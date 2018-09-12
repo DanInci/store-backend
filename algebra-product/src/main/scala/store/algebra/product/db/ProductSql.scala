@@ -4,8 +4,8 @@ import store.core._
 import doobie._
 import doobie.implicits._
 import cats.implicits._
-import store.algebra.content.Format
-import store.algebra.content.entity.ContentDB
+import store.algebra.content._
+import store.algebra.content.entity._
 import store.algebra.product._
 import store.algebra.product.db.entity._
 import store.algebra.product.entity._
@@ -17,28 +17,60 @@ import store.algebra.product.entity.component._
   */
 object ProductSql extends ProductComposites {
 
+  final case class ContentDB(
+      contentId: ContentID,
+      name: String,
+      format: Format
+  )
+
+  final case class PromotionDB(
+      promotionId: PromotionID,
+      title: Title,
+      description: Description,
+      promotedProductId: Option[ProductID],
+      content: ContentDB,
+      expiresAt: PromotionExpiration
+  )
+
   // CATEGORY QUERIES
 
   def findCategoriesBySex(sex: Sex): ConnectionIO[List[CategoryDB]] = {
-    sql"SELECT category_id, name, sex FROM category WHERE sex=$sex".query[CategoryDB].to[List]
+    sql"SELECT category_id, name, sex FROM category WHERE sex=$sex"
+      .query[CategoryDB]
+      .to[List]
   }
 
   // CONTENT QUERIES
+  def insertContent(contentDB: ContentDB): ConnectionIO[Int] =
+    sql"INSERT INTO content (content_id, name, format) VALUES (${contentDB.contentId}, ${contentDB.name}, ${contentDB.format})".update.run
 
-  def addContentToProduct(contentDB: ContentDB,
-                          productId: ProductID): ConnectionIO[Int] =
-    sql"INSERT INTO content (content_id, p_product_id, name) VALUES (${contentDB.contentId}, $productId, ${contentDB.name})".update.run
+  def findContentByID(id: ContentID): ConnectionIO[Option[ContentDB]] =
+    sql"SELECT content_id, name, format FROM content WHERE content_id=$id"
+      .query[ContentDB]
+      .option
 
-  def findContentByProductID(productId: ProductID,
-                             format: Format): ConnectionIO[List[ContentDB]] = {
-    val whereClause = s"WHERE p_product_id=$productId AND content_id LIKE '%$format'"
-    (sql"SELECT content_id, name FROM content " ++ Fragment.const(whereClause))
+  def findContentsByProductID(
+      productId: ProductID): ConnectionIO[List[ContentDB]] = {
+    sql"""SELECT c.content_id, c.name, c.format
+         | FROM content c
+         | INNER JOIN product_content_map pcmap ON c.content_id = pcmap.c_content_id
+         | WHERE pcmap.p_product_id=$productId""".stripMargin
       .query[ContentDB]
       .to[List]
   }
 
-  def deleteContentByProductID(productId: ProductID): ConnectionIO[Int] =
-    sql"DELETE FROM content WHERE p_product_id=$productId".update.run
+  def mapContentToProduct(contentId: ContentID, productId: ProductID): ConnectionIO[Int] =
+    sql"INSERT INTO product_content_map (p_product_id, c_content_id) VALUES ($productId, $contentId)".update.run
+
+  def deleteContentsByProductID(productId: ProductID): ConnectionIO[Unit] =
+    for {
+      contentDBs <- findContentsByProductID(productId)
+      _ <- sql"DELETE FROM product_content_map WHERE p_product_id=$productId".update.run
+      _ <- contentDBs.map(c => deleteContentByID(c.contentId)).sequence
+    } yield ()
+
+  def deleteContentByID(contentId: ContentID): ConnectionIO[Int] =
+    sql"DELETE FROM content WHERE content_id=$contentId".update.run
 
   // PRODUCT QUERIES
 
@@ -83,7 +115,7 @@ object ProductSql extends ProductComposites {
          | FROM product p
          | INNER JOIN category c ON p.c_category_id = c.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
-      sql" LIMIT $limit OFFSET ${offset*limit}")
+      sql" LIMIT $limit OFFSET ${offset * limit}")
       .query[StoreProductDB]
       .to[List]
 
@@ -126,4 +158,27 @@ object ProductSql extends ProductComposites {
                                     size: ProductSize): ConnectionIO[Int] =
     sql"DELETE FROM stock WHERE p_product_id=$productId AND product_size=$size".update.run
 
+  // PROMOTION QUERIES
+  def insertPromotion(definition: PromotionDefinition,
+                      contentId: ContentID): ConnectionIO[PromotionID] =
+    sql"""INSERT INTO promotion (title, description, p_product_id, c_content_id, expires_at)
+         | VALUES (${definition.title}, ${definition.description}, ${definition.promotedProductId}, $contentId, ${definition.expiresAt})""".stripMargin.update
+      .withUniqueGeneratedKeys("promotion_id")
+
+  def findPromotionById(id: PromotionID): ConnectionIO[Option[PromotionDB]] =
+    sql"""SELECT p.promotion_id, p.title, p.description, p.p_product_id, c.content_id, c.name, c.format, p.expires_at
+         | FROM promotion p
+         | INNER JOIN content c on p.c_content_id = c.content_id
+         | WHERE p.promotion_id=$id""".stripMargin.query[PromotionDB].option
+
+  def findAllPromotionsOrderedByExpiresAtAsc: ConnectionIO[List[PromotionDB]] =
+    sql"""SELECT p.promotion_id, p.title, p.description, p.p_product_id, c.content_id, c.name, c.format, p.expires_at
+         | FROM promotion p
+         | INNER JOIN content c on p.c_content_id = c.content_id
+         | ORDER BY p.expires_at ASC""".stripMargin
+      .query[PromotionDB]
+      .to[List]
+
+  def deletePromotionById(id: PromotionID): ConnectionIO[Int] =
+    sql"DELETE FROM promotion WHERE promotion_id=$id".update.run
 }

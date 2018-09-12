@@ -7,6 +7,6 @@ import java.time.format.DateTimeFormatter
   * @since 20/08/2018
   */
 object TimeFormatters {
-  val LocalDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("YYYY-MM-dd")
+  val LocalDateFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
   val LocalDateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm")
 }

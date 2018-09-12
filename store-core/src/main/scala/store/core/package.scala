@@ -6,8 +6,11 @@ package store
   */
 package object core {
 
-  object Link extends PhantomType[String]
-  type Link = Link.Type
+  object Title extends PhantomType[String]
+  type Title = Title.Type
+
+  object Description extends PhantomType[String]
+  type Description = Description.Type
 
   object PageOffset extends PhantomType[Int]
   type PageOffset = PageOffset.Type

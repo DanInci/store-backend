@@ -11,8 +11,7 @@ final case class S3StorageConfig(
     accessKeyId: String,
     secretAccessKey: String,
     bucketName: String,
-    region: String,
-    baseLink: String
+    region: String
 )
 
 object S3StorageConfig extends ConfigLoader[S3StorageConfig] {

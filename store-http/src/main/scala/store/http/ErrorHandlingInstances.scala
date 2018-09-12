@@ -12,8 +12,8 @@ import scala.util.control.NonFatal
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 13/08/2018
   */
-trait ErrorHandlingInstances[F[_]] {
-  this: Http4sDsl[F] with AnomalyJsonCodec =>
+trait ErrorHandlingInstances[F[_]] extends AnomalyJsonCodec {
+  this: Http4sDsl[F] =>
 
   implicit protected def errorHandling(req: Request[F])(e: Throwable)(
       implicit M: Monad[F]): F[Response[F]] = e match {

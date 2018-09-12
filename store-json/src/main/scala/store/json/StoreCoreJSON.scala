@@ -8,9 +8,14 @@ import store.core._
   */
 trait StoreCoreJSON {
 
-  implicit val linkCirceCodec: Codec[Link] = Codec.instance[Link](
-    encode = Encoder.apply[String].contramap(Link.unapply),
-    decode = Decoder.apply[String].map(Link.apply)
+  implicit val titleCirceCodec: Codec[Title] = Codec.instance[Title](
+    encode = Encoder.apply[String].contramap(Title.unapply),
+    decode = Decoder.apply[String].map(Title.apply)
+  )
+
+  implicit val descriptionCirceCodec: Codec[Description] = Codec.instance[Description](
+    encode = Encoder.apply[String].contramap(Description.unapply),
+    decode = Decoder.apply[String].map(Description.apply)
   )
 
 }

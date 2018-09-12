@@ -1,6 +1,9 @@
 package store.service.product.rest
 
+import java.time.LocalDate
+
 import store.algebra.content._
+import store.algebra.content.entity._
 import store.json._
 import store.algebra.product._
 import store.algebra.product.entity._
@@ -57,6 +60,11 @@ trait ProductServiceJSON extends StoreJSON {
     decode = Decoder.apply[Array[Byte]].map(BinaryContent.apply)
   )
 
+  implicit val formatCirceCodec: Codec[Format] = Codec.instance[Format](
+    encode = Encoder.apply[String].contramap(f => f.formatStr),
+    decode = Decoder.apply[String].emap(s => Format.fromString(s).left.map(_.message))
+  )
+
   implicit val descriptionParagraphCirceCodec: Codec[DescParagraph] = Codec.instance[DescParagraph](
     encode = Encoder.apply[String].contramap(DescParagraph.unapply),
     decode = Decoder.apply[String].map(DescParagraph.apply)
@@ -67,11 +75,17 @@ trait ProductServiceJSON extends StoreJSON {
     decode = Decoder.apply[String].map(CareParagraph.apply)
   )
 
-  implicit val imageFileCodec: Codec[ImageFile] = derive.codec[ImageFile]
+  implicit val promotionIDCirceCodec: Codec[PromotionID] = Codec.instance[PromotionID](
+    encode = Encoder.apply[Long].contramap(PromotionID.unapply),
+    decode = Decoder.apply[Long].map(PromotionID.apply)
+  )
 
-  implicit val imageFileLinkCodec: Codec[ImageFileLink] = derive.codec[ImageFileLink]
+  implicit val promotionExpirationCirceCodec: Codec[PromotionExpiration] = Codec.instance[PromotionExpiration](
+    encode = Encoder.apply[LocalDate].contramap(PromotionExpiration.unapply),
+    decode = Decoder.apply[LocalDate].map(PromotionExpiration.apply)
+  )
 
-  implicit val imageFileDefinitionCodec: Codec[ImageFileDefinition] = derive.codec[ImageFileDefinition]
+  implicit val contentCodec: Codec[Content] = derive.codec[Content]
 
   implicit val categoryCodec: Codec[Category] = derive.codec[Category]
 
@@ -80,5 +94,9 @@ trait ProductServiceJSON extends StoreJSON {
   implicit val storeProductCodec: Codec[StoreProduct] = derive.codec[StoreProduct]
 
   implicit val storeProductDefinitionCodec: Codec[StoreProductDefinition] = derive.codec[StoreProductDefinition]
+
+  implicit val promotionCodec: Codec[Promotion] = derive.codec[Promotion]
+
+  implicit val promotionDefinitionCodec: Codec[PromotionDefinition] = derive.codec[PromotionDefinition]
 
 }

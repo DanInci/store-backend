@@ -10,11 +10,11 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model._
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import store.algebra.content._
-import store.core.{BlockingAlgebra, Link}
+import store.algebra.content.entity.Format
+import store.core._
 import store.effects.Async
 
 import scala.collection.JavaConverters
-import scala.util.Random
 import scala.util.control.NonFatal
 
 /**
@@ -46,14 +46,11 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
       .build()
   }
 
-  override def getContentLink(id: ContentID): F[Link] = F.delay {
-    Link(config.baseLink + "/" + config.bucketName + "/" + id)
-  }
-
   override def getContent(id: ContentID): F[BinaryContent] = block {
     for {
       client <- _s3Client
-      request = new GetObjectRequest(config.bucketName, id)
+      (bucketName, contentId) = splitContentId(id)
+      request = new GetObjectRequest(bucketName, contentId)
       s3object <- F
         .delay(client.getObject(request))
         .handleErrorWith(amazonServiceErrorHandler)
@@ -72,7 +69,7 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
     for {
       client <- _s3Client
       uuid <- F.delay(UUID.randomUUID)
-      contentId = ContentID(path + uuid.toString + "." + format)
+      contentId = ContentID(path + "/" + uuid.toString + "." + format)
       inputStream = new ByteArrayInputStream(content)
       metaData = {
         val x = new ObjectMetadata()
@@ -88,13 +85,15 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
         .delay(client.putObject(request))
         .handleErrorWith(amazonServiceErrorHandler)
         .void
-    } yield contentId
+      contentIdIdWithBucket = ContentID(config.bucketName + "/" + contentId)
+    } yield contentIdIdWithBucket
   }
 
   override def removeContent(id: ContentID): F[Unit] = block {
     for {
       client <- _s3Client
-      request = new DeleteObjectRequest(config.bucketName, id)
+      (bucketName, contentId) = splitContentId(id)
+      request = new DeleteObjectRequest(bucketName, contentId)
       _ <- F
         .delay(client.deleteObject(request))
         .handleErrorWith(amazonServiceErrorHandler)
@@ -124,6 +123,11 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
     } yield ()
   }
 
+  private def splitContentId(contentId: ContentID): (BucketName, ContentID) = {
+    val split = contentId.split("/", 2)
+    (BucketName(split.head), ContentID(split.tail.mkString))
+  }
+
   private def amazonServiceErrorHandler[A](e: Throwable): F[A] = e match {
     case NonFatal(e: AmazonClientException) =>
       logger
@@ -131,7 +135,7 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
         .flatMap(_ => F.raiseError[A](e))
     case NonFatal(e: AmazonServiceException) =>
       logger
-        .error(s"Amazon client exception: ${e.getMessage}")
+        .error(s"Amazon service exception: ${e.getMessage}")
         .flatMap(_ => F.raiseError[A](e))
     case ex => F.raiseError[A](ex)
   }

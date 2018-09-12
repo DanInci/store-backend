@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import org.http4s.HttpService
 import store.algebra.content.ModuleContentAsync
 import store.algebra.product.ModuleProductAsync
-import store.service.product.rest.{ProductRestService, ProductStockRestService}
+import store.service.product.rest._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -19,6 +19,8 @@ trait ModuleProductServiceAsync[F[_]] {
 
   def stockRestService: ProductStockRestService[F] = _stockRestService
 
+  def promotionRestService: PromotionRestService[F] = _promotionRestService
+
   private lazy val _productRestService: ProductRestService[F] =
     new ProductRestService[F](
       productAlgebra = productAlgebra
@@ -29,12 +31,18 @@ trait ModuleProductServiceAsync[F[_]] {
       stockAlgebra = stockAlgebra
     )
 
+  private lazy val _promotionRestService: PromotionRestService[F] =
+    new PromotionRestService[F](
+      promotionAlgebra = promotionAlgebra
+    )
+
   private lazy val _service = {
     import cats.implicits._
     NonEmptyList
       .of(
         productRestService.service,
-        stockRestService.service
+        stockRestService.service,
+        promotionRestService.service
       )
       .reduceK
   }
