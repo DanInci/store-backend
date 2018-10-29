@@ -1,7 +1,7 @@
 package store.algebra.email
 
 import store.core.entity.Email
-import store.effects.Async
+import store.effects.Concurrent
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -11,12 +11,11 @@ trait EmailAlgebra[F[_]] {
 
   def sendEmail(to: Email, subject: Subject, content: Content): F[Unit]
 
-  def receiveMail(from: Email, subject: Subject, content: Content): F[Unit]
-
 }
 object EmailAlgebra {
 
-  def async[F[_]: Async](config: EmailConfig): EmailAlgebra[F] =
-    new impl.AsyncAlgebraImpl[F](config)
+  def async[F[_]: Concurrent](config: EmailConfig)(
+      implicit emailContext: EmailContext[F]): EmailAlgebra[F] =
+    new impl.ConcurrentAlgebraImpl[F](config)
 
 }

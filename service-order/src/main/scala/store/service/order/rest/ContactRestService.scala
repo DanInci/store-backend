@@ -26,7 +26,7 @@ final class ContactRestService[F[_]](
         contact <- req.as[ContactRequest]
         subject = Subject(s"${contact.name} sent you an email")
         content = Content(s"Contact email: ${contact.email}${contact.phoneNumber.map(p => s"<br>Contact phone number: $p")}<br><br>Message: ${contact.message}")
-        _ <- emailAlgebra.receiveMail(contact.email, subject, content)
+        _ <- emailAlgebra.sendEmail(contact.email, subject, content)
         resp <- Ok()
       } yield resp
   }

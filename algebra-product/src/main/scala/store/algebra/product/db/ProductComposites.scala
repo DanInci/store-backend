@@ -1,13 +1,13 @@
 package store.algebra.product.db
 
 import java.sql.Timestamp
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import doobie._
 import doobie.postgres.implicits._
 import store.algebra.content._
 import store.algebra.content.entity.Format
-import store.algebra.product._
+import store.algebra.product.{AddedAt, _}
 import store.algebra.product.entity.component._
 import store.core._
 import store.effects._
@@ -93,10 +93,11 @@ trait ProductComposites {
     DescParagraph.unapply
   )
 
-  implicit val descParagraphListMeta: Meta[List[DescParagraph]] = Meta[List[String]].xmap(
-    sl => sl.map(DescParagraph.apply),
-    dpl => dpl.map(DescParagraph.unapply)
-  )
+  implicit val descParagraphListMeta: Meta[List[DescParagraph]] =
+    Meta[List[String]].xmap(
+      sl => sl.map(DescParagraph.apply),
+      dpl => dpl.map(DescParagraph.unapply)
+    )
 
   implicit val careParagraphMeta: Meta[CareParagraph] = Meta[String].xmap(
     CareParagraph.apply,
@@ -108,14 +109,26 @@ trait ProductComposites {
     t => Timestamp.valueOf(t.atStartOfDay())
   )
 
-  implicit val promotionExpirationMeta: Meta[PromotionExpiration] = Meta[LocalDate].xmap(
-    PromotionExpiration.apply,
-    PromotionExpiration.unapply
+  implicit val localDateTimeMeta: Meta[LocalDateTime] = Meta[Timestamp].xmap(
+    _.toLocalDateTime,
+    t => Timestamp.valueOf(t)
   )
 
-  implicit val careParagraphListMeta: Meta[List[CareParagraph]] = Meta[List[String]].xmap(
-    sl => sl.map(CareParagraph.apply),
-    dpl => dpl.map(CareParagraph.unapply)
+  implicit val addedAtMeta: Meta[AddedAt] = Meta[LocalDateTime].xmap(
+    AddedAt.apply,
+    AddedAt.unapply
   )
+
+  implicit val promotionExpirationMeta: Meta[PromotionExpiration] =
+    Meta[LocalDate].xmap(
+      PromotionExpiration.apply,
+      PromotionExpiration.unapply
+    )
+
+  implicit val careParagraphListMeta: Meta[List[CareParagraph]] =
+    Meta[List[String]].xmap(
+      sl => sl.map(CareParagraph.apply),
+      dpl => dpl.map(CareParagraph.unapply)
+    )
 
 }

@@ -15,5 +15,6 @@ final case class StoreProductDB(
     isAvailableOnCommand: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph],
+    addedAt: AddedAt,
     category: CategoryDB
 )

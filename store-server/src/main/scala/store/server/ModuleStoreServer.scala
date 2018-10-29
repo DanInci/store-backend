@@ -22,15 +22,19 @@ trait ModuleStoreServer[F[_]]
     with ModuleProductAsync[F]
     with ModuleContentAsync[F]
     with ModuleOrderAsync[F]
-    with ModuleEmailAsync[F] {
+    with ModuleEmailConcurrent[F] {
 
-  override implicit def async: Async[F]
+  override implicit def concurrent: Concurrent[F]
+
+  override implicit def async: Async[F] = concurrent
 
   override implicit def transactor: Transactor[F]
 
   override implicit def dbContext: DatabaseContext[F]
 
   override implicit def contentContext: ContentContext[F]
+
+  override implicit def emailContext: EmailContext[F]
 
   override def fileStorageConfig: FileStorageConfig
 
@@ -52,19 +56,24 @@ trait ModuleStoreServer[F[_]]
 
 object ModuleStoreServer {
 
-  def concurrent[F[_]](filesConfig: FileStorageConfig, s3Config: S3StorageConfig, eConfig: EmailConfig)(
+  def concurrent[F[_]](filesConfig: FileStorageConfig,
+                       s3Config: S3StorageConfig,
+                       eConfig: EmailConfig)(
       implicit c: Concurrent[F],
       t: Transactor[F],
       dbc: DatabaseContext[F],
-      cc: ContentContext[F]): ModuleStoreServer[F] =
+      cc: ContentContext[F],
+      ec: EmailContext[F]): ModuleStoreServer[F] =
     new ModuleStoreServer[F] {
-      override implicit def async: Async[F] = c
+      override implicit def concurrent: Concurrent[F] = c
 
       override implicit def transactor: Transactor[F] = t
 
       override implicit def dbContext: DatabaseContext[F] = dbc
 
       override implicit def contentContext: ContentContext[F] = cc
+
+      override implicit def emailContext: EmailContext[F] = ec
 
       override def fileStorageConfig: FileStorageConfig = filesConfig
 

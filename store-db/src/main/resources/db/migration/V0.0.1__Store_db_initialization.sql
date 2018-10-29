@@ -141,7 +141,8 @@ CREATE TABLE "product"
 	discount DOUBLE PRECISION NULL,
 	availability_on_command BOOL NOT NULL,
 	description VARCHAR(255)[] NOT NULL,
-	care VARCHAR(255)[] NOT NULL
+	care VARCHAR(255)[] NOT NULL,
+	added_at TIMESTAMP NOT NULL
 );
 
 /* Add Primary Key */

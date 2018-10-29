@@ -20,7 +20,8 @@ final case class StoreProduct(
     discount: Discount,
     isAvailableOnCommand: Boolean,
     description: List[DescParagraph],
-    care: List[CareParagraph]
+    care: List[CareParagraph],
+    addedAt: AddedAt
 ) extends Serializable
 
 object StoreProduct {
@@ -40,6 +41,7 @@ object StoreProduct {
       spdb.discount,
       spdb.isAvailableOnCommand,
       spdb.description,
-      spdb.care
+      spdb.care,
+      spdb.addedAt
     )
 }

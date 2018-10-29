@@ -1,5 +1,7 @@
 package store.algebra.product.db
 
+import java.time.LocalDateTime
+
 import store.core._
 import doobie._
 import doobie.implicits._
@@ -59,7 +61,8 @@ object ProductSql extends ProductComposites {
       .to[List]
   }
 
-  def mapContentToProduct(contentId: ContentID, productId: ProductID): ConnectionIO[Int] =
+  def mapContentToProduct(contentId: ContentID,
+                          productId: ProductID): ConnectionIO[Int] =
     sql"INSERT INTO product_content_map (p_product_id, c_content_id) VALUES ($productId, $contentId)".update.run
 
   def deleteContentsByProductID(productId: ProductID): ConnectionIO[Unit] =
@@ -75,14 +78,15 @@ object ProductSql extends ProductComposites {
   // PRODUCT QUERIES
 
   def insertProduct(
-      definition: StoreProductDefinition): ConnectionIO[ProductID] = {
-    sql"""INSERT INTO product (c_category_id, name, price, discount, availability_on_command, description, care)
-         | VALUES (${definition.categoryId},${definition.name},${definition.price},${definition.discount},${definition.isAvailableOnCommand},${definition.description}, ${definition.care})""".stripMargin.update
-      .withUniqueGeneratedKeys("product_id")
-  }
+      definition: StoreProductDefinition): ConnectionIO[ProductID] =
+    AsyncConnectionIO.delay(LocalDateTime.now).flatMap { now =>
+      sql"""INSERT INTO product (c_category_id, name, price, discount, availability_on_command, description, care, added_at)
+         | VALUES (${definition.categoryId},${definition.name},${definition.price},${definition.discount},${definition.isAvailableOnCommand},${definition.description}, ${definition.care}, $now)""".stripMargin.update
+        .withUniqueGeneratedKeys("product_id")
+    }
 
   def findById(productId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, c.category_id, c.name, c.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, c.category_id, c.name, c.sex
          | FROM product p
          | INNER JOIN category c ON p.c_category_id = c.category_id
          | WHERE p.product_id=$productId""".stripMargin
@@ -111,11 +115,12 @@ object ProductSql extends ProductComposites {
       }
     }
 
-    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, c.category_id, c.name, c.sex
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, c.category_id, c.name, c.sex
          | FROM product p
          | INNER JOIN category c ON p.c_category_id = c.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
-      sql" LIMIT $limit OFFSET ${offset * limit}")
+      sql""" ORDER BY p.added_at DESC
+           | LIMIT $limit OFFSET ${offset * limit}""".stripMargin)
       .query[StoreProductDB]
       .to[List]
 
@@ -130,9 +135,12 @@ object ProductSql extends ProductComposites {
     sql"INSERT INTO stock (p_product_id, product_size, available_count) VALUES ($productId, ${stock.size}, ${stock.count})".update.run
 
   def findStocksByProductID(productId: ProductID): ConnectionIO[List[Stock]] =
-    sql"SELECT product_size, available_count FROM stock WHERE p_product_id=$productId"
-      .query[Stock]
-      .to[List]
+    for {
+      stocks <- sql"SELECT product_size, available_count FROM stock WHERE p_product_id=$productId"
+        .query[Stock]
+        .to[List]
+      sortedStocks = stocks.sortBy(_.size)(ProductSize.productSizeOrdering)
+    } yield sortedStocks
 
   def findStockByProductIdAndSize(
       productId: ProductID,

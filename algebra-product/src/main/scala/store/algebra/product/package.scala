@@ -1,6 +1,6 @@
 package store.algebra
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import store.core.PhantomType
 
@@ -30,6 +30,9 @@ package object product {
 
   object CareParagraph extends PhantomType[String]
   type CareParagraph = CareParagraph.Type
+
+  object AddedAt extends PhantomType[LocalDateTime]
+  type AddedAt = AddedAt.Type
 
   type ModuleProductAlgebra[F[_]] = ProductAlgebra[F] with ProductStockAlgebra[F] with PromotionAlgebra[F]
 }

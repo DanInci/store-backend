@@ -1,11 +1,11 @@
 package store.service.product.rest
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import store.algebra.content._
 import store.algebra.content.entity._
 import store.json._
-import store.algebra.product._
+import store.algebra.product.{AddedAt, _}
 import store.algebra.product.entity._
 import store.algebra.product.entity.component._
 
@@ -73,6 +73,11 @@ trait ProductServiceJSON extends StoreJSON {
   implicit val careParagraphCirceCodec: Codec[CareParagraph] = Codec.instance[CareParagraph](
     encode = Encoder.apply[String].contramap(CareParagraph.unapply),
     decode = Decoder.apply[String].map(CareParagraph.apply)
+  )
+
+  implicit val addedAtCirceCodec: Codec[AddedAt] = Codec.instance[AddedAt](
+    encode = Encoder.apply[LocalDateTime].contramap(AddedAt.unapply),
+    decode = Decoder.apply[LocalDateTime].map(AddedAt.apply)
   )
 
   implicit val promotionIDCirceCodec: Codec[PromotionID] = Codec.instance[PromotionID](

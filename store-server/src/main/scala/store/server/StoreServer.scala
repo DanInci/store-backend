@@ -8,7 +8,7 @@ import store.db._
 import doobie.util.transactor.Transactor
 import monix.execution.Scheduler
 import store.algebra.content.{ContentContext, FileStorageConfig, S3StorageConfig}
-import store.algebra.email.EmailConfig
+import store.algebra.email.{EmailConfig, EmailContext}
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -32,13 +32,14 @@ class StoreServer[F[_]: Concurrent] private (
       _              <- Stream.eval(logger.info(s"Successfully ran $nrOfMigs migration(s)"))
       dbContext      <- DatabaseContext.create[F](dbConfig.connectionPoolSize)
       contentContext <- ContentContext.create[F]
-      storeModule    <- Stream.eval(moduleInit(transactor, dbContext, filesConfig, s3Config, contentContext, emailConfig))
+      emailContext   <- EmailContext.create[F]
+      storeModule    <- Stream.eval(moduleInit(transactor, dbContext, filesConfig, s3Config, contentContext, emailConfig, emailContext))
       _              <- Stream.eval(logger.info("Successfully initialized store-server"))
       _              <- Stream.eval(logger.info(s"Started server on ${serverConfig.host}:${serverConfig.port}"))
     } yield (serverConfig, storeModule)
 
-  private def moduleInit(transactor: Transactor[F], dbContext: DatabaseContext[F], filesConfig: FileStorageConfig, s3Config: S3StorageConfig, contentContext: ContentContext[F], emailConfig: EmailConfig): F[ModuleStoreServer[F]] =
-    Concurrent.apply[F].delay(ModuleStoreServer.concurrent(filesConfig, s3Config, emailConfig)(implicitly, transactor, dbContext, contentContext))
+  private def moduleInit(transactor: Transactor[F], dbContext: DatabaseContext[F], filesConfig: FileStorageConfig, s3Config: S3StorageConfig, contentContext: ContentContext[F], emailConfig: EmailConfig, emailContext: EmailContext[F]): F[ModuleStoreServer[F]] =
+    Concurrent.apply[F].delay(ModuleStoreServer.concurrent(filesConfig, s3Config, emailConfig)(implicitly, transactor, dbContext, contentContext, emailContext))
 
 }
 

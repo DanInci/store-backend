@@ -2,7 +2,7 @@ package store.service.order
 
 import cats.data.NonEmptyList
 import org.http4s.HttpService
-import store.algebra.email.ModuleEmailAsync
+import store.algebra.email.ModuleEmailConcurrent
 import store.algebra.order.ModuleOrderAsync
 import store.service.order.rest.{ContactRestService, OrderRestService}
 
@@ -11,7 +11,7 @@ import store.service.order.rest.{ContactRestService, OrderRestService}
   * @since 20/08/2018
   */
 trait ModuleOrderServiceAsync[F[_]] {
-  this: ModuleOrderAsync[F] with ModuleEmailAsync[F] =>
+  this: ModuleOrderAsync[F] with ModuleEmailConcurrent[F] =>
 
   def orderModuleService: HttpService[F] = _service
 
