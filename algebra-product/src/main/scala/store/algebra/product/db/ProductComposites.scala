@@ -18,11 +18,6 @@ import store.effects._
   */
 trait ProductComposites {
 
-  implicit val promotionIDMeta: Meta[PromotionID] = Meta[Long].xmap(
-    PromotionID.apply,
-    PromotionID.unapply
-  )
-
   implicit val titleMeta: Meta[Title] = Meta[String].xmap(
     Title.apply,
     Title.unapply

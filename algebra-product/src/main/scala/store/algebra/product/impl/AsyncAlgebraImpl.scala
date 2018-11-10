@@ -1,19 +1,18 @@
 package store.algebra.product.impl
 
-import java.time.LocalDate
-
 import busymachines.core._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 import store.effects._
-import store.db.DatabaseContext
+import store.db._
 import store.algebra.content._
 import store.algebra.content.entity.Content
 import store.algebra.product.entity._
 import store.algebra.product._
+import store.algebra.product.db.entity._
 import store.algebra.product.entity.component._
-import store.core.BlockingAlgebra
+import store.core._
 import store.core.entity._
 
 /**
@@ -28,7 +27,7 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     val dbContext: DatabaseContext[F]
 ) extends ProductAlgebra[F]
     with ProductStockAlgebra[F]
-    with PromotionAlgebra[F]
+    with DatabaseAlgebra[F]
     with BlockingAlgebra[F] {
 
   import store.algebra.product.db.ProductSql._
@@ -44,15 +43,19 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     for {
       productId <- transact(insertProduct(productDefinition))
       contentIds <- productDefinition.images
-        .map(
-          i => checkAndSaveContent(i, Path(s"product/$productId"))
-        )
+        .map(checkAndSaveContent(_, Path(s"product/$productId")))
+        .sequence
+      promotionImageId <- productDefinition.promotionImage
+        .map(checkAndSaveContent(_, Path(s"product/$productId")))
         .sequence
       _ <- transact {
         for {
           _ <- contentIds
             .map(cid => mapContentToProduct(cid, productId))
             .sequence
+          _ <- updateProductPromotion(productId,
+                                      promotionImageId.nonEmpty,
+                                      promotionImageId)
           _ <- productDefinition.stocks
             .map(s => addStockToProduct(s, productId))
             .sequence
@@ -68,10 +71,11 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     for {
       productsDB <- transact {
         for {
-          productsDb <- findByNameAndCategories(nameFilter,
-                                                categoryFilter,
-                                                pagingInfo.offset,
-                                                pagingInfo.limit)
+          productsDb <- findByNameAndCategoriesOrderedByAddedAtDesc(
+            nameFilter,
+            categoryFilter,
+            pagingInfo.offset,
+            pagingInfo.limit)
           stocksList <- productsDb
             .map(
               p => findStocksByProductID(p.productId)
@@ -98,7 +102,9 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       product <- transact {
         for {
           productDB <- findById(productId).flatMap(
-            exists(_, NotFoundFailure(s"Product not found wih id $productId")))
+            exists(
+              _,
+              NotFoundFailure(s"Product with id $productId was not found")))
           stocks <- findStocksByProductID(productDB.productId)
         } yield StoreProduct.fromStoreProductDB(productDB, stocks)
       }
@@ -108,18 +114,21 @@ final private[product] class AsyncAlgebraImpl[F[_]](
 
   override def removeProduct(productId: ProductID): F[Unit] = {
     for {
-      shouldDeleteFiles <- {
-        val q = for {
+      _ <- transact {
+        for {
+          product <- findById(productId).flatMap(
+            exists(
+              _,
+              NotFoundFailure(s"Product with id $productId was not found")))
           _ <- deleteStockByProductID(productId)
+          _ <- deleteContentByID(
+            product.promotionImage.map(_.contentId).getOrElse(ContentID("")))
           _ <- deleteContentsByProductID(productId)
-          affectedRows <- deleteProduct(productId)
-        } yield affectedRows == 1
-        transact(q)
+          _ <- deleteProduct(productId)
+        } yield ()
       }
-      _ <- if (shouldDeleteFiles)
-        contentStorageAlgebra.removeContentsFromPath(
-          Path("products/" + productId))
-      else F.raiseError(NotFoundFailure(s"Product not found wih id $productId"))
+      _ <- contentStorageAlgebra.removeContentsFromPath(
+        Path("products/" + productId))
     } yield ()
   }
 
@@ -170,75 +179,54 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       } yield ()
     }
 
-  override def createPromotion(
-      definition: PromotionDefinition): F[PromotionID] =
+  override def getRecentProductPromotions: F[List[ProductPromotion]] =
     for {
-      contentId <- checkAndSaveContent(definition.image, Path("promotions"))
-      promotionId <- transact {
+      promotionProducts <- transact {
         for {
-          now <- AsyncConnectionIO.delay(LocalDate.now)
-          _ <- if (now.isAfter(definition.expiresAt))
-            AsyncConnectionIO.raiseError[Unit](
-              InvalidInputFailure("Promotion expiration date already passed"))
-          else AsyncConnectionIO.unit
-          promotionId <- insertPromotion(definition, contentId)
-        } yield promotionId
+          lastAddedProduct <- findByNameAndCategoriesOrderedByAddedAtDesc(
+            None,
+            Nil,
+            PageOffset(0),
+            PageLimit(1))
+          products <- lastAddedProduct.headOption match {
+            case Some(last) =>
+              val endDate = last.addedAt
+              val startDate = endDate.minusDays(endDate.getDayOfMonth.toLong)
+              findAllProductsAddedBetween(startDate, endDate)
+            case None => pure(List.empty[StoreProductDB])
+          }
+        } yield products.filter(_.isOnPromotion)
       }
-    } yield promotionId
-
-  override def getPromotionById(promotionId: PromotionID): F[Promotion] = {
-    for {
-      promotionDB <- transact(
-        findPromotionById(promotionId).flatMap(
-          exists(
-            _,
-            NotFoundFailure(s"Promotion with $promotionId was not found"))))
-      promotion <- fillContentDBInfo(promotionDB.content, loadBytes = false)
-        .map(c => Promotion.fromPromotionDB(promotionDB, c))
-    } yield promotion
-  }
-
-  override def getAllPromotions: F[List[Promotion]] = {
-    for {
-      promotionDBList <- transact(findAllPromotionsOrderedByExpiresAtAsc)
-      promotions <- promotionDBList
-        .map(p =>
-          fillContentDBInfo(p.content, loadBytes = false).map(c =>
-            Promotion.fromPromotionDB(p, c)))
-        .sequence
+      promotions <- promotionProducts.map(convertToPromotionProduct).sequence
     } yield promotions
-  }
 
-  override def getActivePromotions: F[List[Promotion]] =
+  /*_*/
+  override def getProductNavigation(
+      currentProductId: ProductID): F[ProductNavigation] =
     for {
-      allPromotions <- getAllPromotions
-      activePromotions <- for {
-        now <- F.delay(LocalDate.now)
-        filteredPromotions = allPromotions.filter(p =>
-          now.isBefore(p.expiresAt)) match {
-          case Nil => filterLastChronologicalPromotions(allPromotions)
-          case l   => l
-        }
-      } yield filteredPromotions
-    } yield activePromotions
-
-  override def deletePromotion(promotionId: PromotionID): F[Unit] =
-    for {
-      toBeDeletedContentId <- transact {
+      (previous, current, next) <- transact {
         for {
-          promotion <- findPromotionById(promotionId).flatMap(
-            exists(
-              _,
-              NotFoundFailure(s"Promotion with $promotionId was not found")))
-          _ <- deletePromotionById(promotion.promotionId)
-          _ <- deleteContentByID(promotion.content.contentId)
-        } yield promotion.content.contentId
+          current <- findById(currentProductId).flatMap(
+            exists(_,
+                   NotFoundFailure(
+                     s"Product with id $currentProductId was not found")))
+          currentStocks <- findStocksByProductID(current.productId)
+          previous: Option[StoreProduct] <- findPreviousByCurrentId(currentProductId).flatMap(_.map(fillStoreProductDBInfo).sequence)
+          next: Option[StoreProduct] <- findNextByCurrentId(currentProductId).flatMap(_.map(fillStoreProductDBInfo).sequence)
+        } yield
+          (previous,
+           StoreProduct.fromStoreProductDB(current, currentStocks),
+           next)
       }
-      _ <- contentStorageAlgebra.removeContent(toBeDeletedContentId)
-    } yield ()
+      current <- getContentByProductId(current.productId, loadBytes = false)
+        .map(images => current.copy(images = images))
+      previous <- previous.map(p => getContentByProductId(p.productId, loadBytes = false).map(images => p.copy(images = images))).sequence
+      previous <- previous.map(n => getContentByProductId(n.productId, loadBytes = false).map(images => n.copy(images = images))).sequence
+    } yield ProductNavigation(previous, current, next)
+  /*_*/
 
   private def checkAndSaveContent(content: Content, path: Path): F[ContentID] =
-    content.content match {
+    content.getContent match {
       case Left(cid) =>
         transact(
           findContentByID(cid)
@@ -250,7 +238,9 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         )
       case Right(binary) =>
         for {
-          contentId <- contentStorageAlgebra.saveContent(path, content.format, binary)
+          contentId <- contentStorageAlgebra.saveContent(path,
+                                                         content.format,
+                                                         binary)
           contentDB = ContentDB(contentId, content.name, content.format)
           _ <- transact(insertContent(contentDB))
         } yield contentId
@@ -268,39 +258,36 @@ final private[product] class AsyncAlgebraImpl[F[_]](
               contentStorageAlgebra
                 .getContent(c.contentId)
                 .map(binaryContent =>
-                  Content(c.name, Right(binaryContent), c.format))
-            else F.pure(Content(c.name, Left(c.contentId), c.format))
+                  Content.fromBinary(c.name, binaryContent, c.format))
+            else F.pure(Content.fromContentID(c.name, c.contentId, c.format))
         )
         .sequence
     } yield contents
   }
+
+  private def convertToPromotionProduct(
+      storeProduct: StoreProductDB): F[ProductPromotion] =
+    fillContentDBInfo(storeProduct.promotionImage.get, loadBytes = false)
+      .map(c => ProductPromotion.fromStoreProductDB(storeProduct, c))
+
+  private def fillStoreProductDBInfo(
+      s: StoreProductDB): ConnectionIO[StoreProduct] =
+    findStocksByProductID(s.productId).map(stocks =>
+      StoreProduct.fromStoreProductDB(s, stocks))
 
   private def fillContentDBInfo(c: ContentDB,
                                 loadBytes: Boolean): F[Content] = {
     if (loadBytes)
       contentStorageAlgebra
         .getContent(c.contentId)
-        .map(binary => Content(c.name, Right(binary), c.format))
-    else F.pure(Content(c.name, Left(c.contentId), c.format))
-  }
-
-  private def filterLastChronologicalPromotions(
-      promotions: List[Promotion]): List[Promotion] = {
-    val lastChronologicalExpirationDate = promotions.headOption.map(_.expiresAt)
-    lastChronologicalExpirationDate match {
-      case None      => Nil
-      case Some(exp) => promotions.filter(_.expiresAt == exp)
-    }
-  }
-
-  private def transact[A](query: ConnectionIO[A]): F[A] = {
-    block(query.transact(transactor))
+        .map(binary => Content.fromBinary(c.name, binary, c.format))
+    else F.pure(Content.fromContentID(c.name, c.contentId, c.format))
   }
 
   private def exists[A](value: Option[A],
                         failure: AnomalousFailure): ConnectionIO[A] =
     value match {
-      case Some(x) => AsyncConnectionIO.pure[A](x)
-      case None    => AsyncConnectionIO.raiseError(failure)
+      case Some(x) => pure[A](x)
+      case None    => raiseError(failure)
     }
 }

@@ -21,9 +21,7 @@ object EmailContext {
       .unbound[F]
       .map(blockingExecutor =>
         new EmailContext[F] {
-          override def blockingContext: ExecutionContext = ec
-
-          override def defaultContext: ExecutionContext =
-            ExecutionContext.fromExecutorService(blockingExecutor)
+          override def defaultContext: ExecutionContext = ec
+          override def blockingContext: ExecutionContext = ExecutionContext.fromExecutorService(blockingExecutor)
       })
 }

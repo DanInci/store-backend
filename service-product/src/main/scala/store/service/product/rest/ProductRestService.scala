@@ -54,6 +54,12 @@ final class ProductRestService[F[_]](
         resp <- Ok(product)
       } yield resp
 
+    case GET -> Root / "product" / LongVar(productId) / "navigation" =>
+      for {
+        product <- productAlgebra.getProductNavigation(ProductID(productId))
+        resp <- Ok(product)
+      } yield resp
+
     case GET -> Root / "product" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
           categories) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
       for {
@@ -78,11 +84,20 @@ final class ProductRestService[F[_]](
       } yield resp
   }
 
+  private val promotionalProductService: HttpService[F] = HttpServiceWithErrorHandling {
+    case GET -> Root / "product" / "promotion" =>
+      for {
+        products <- productAlgebra.getRecentProductPromotions
+        resp <- Ok(products)
+      } yield resp
+  }
+
   val service: HttpService[F] = {
     NonEmptyList
       .of(
         categoryService,
-        productService
+        productService,
+        promotionalProductService
       )
       .reduceK
   }

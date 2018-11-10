@@ -139,6 +139,8 @@ CREATE TABLE "product"
 	name VARCHAR(100) NOT NULL,
 	price DOUBLE PRECISION NOT NULL,
 	discount DOUBLE PRECISION NULL,
+	is_on_promotion BOOLEAN DEFAULT false NOT NULL,
+	c_promotion_image VARCHAR(200) NULL,
 	availability_on_command BOOL NOT NULL,
 	description VARCHAR(255)[] NOT NULL,
 	care VARCHAR(255)[] NOT NULL,
@@ -173,26 +175,6 @@ CREATE TABLE "stock"
 	product_size VARCHAR(3) NOT NULL,
 	available_count INTEGER NOT NULL
 );
-
-
-/******************** Add Table: "promotion" ************************/
-
-/* Build Table Structure */
-CREATE TABLE "promotion"
-(
-	promotion_id OID DEFAULT nextval('promotion_promotion_id_seq'::regclass) NOT NULL,
-	title VARCHAR(100) NOT NULL,
-	description VARCHAR(255) NOT NULL,
-	p_product_id OID NULL,
-	c_content_id VARCHAR(200) NOT NULL,
-	expires_at TIMESTAMP NOT NULL
-);
-
-/* Add Primary Key */
-ALTER TABLE "promotion" ADD CONSTRAINT pkpromotion
-	PRIMARY KEY (promotion_id);
-
-
 
 /************ Add Foreign Keys ***************/
 
@@ -235,14 +217,4 @@ ALTER TABLE "product" ADD CONSTRAINT fk_product_category
 /* Add Foreign Key: fk_stock_product */
 ALTER TABLE "stock" ADD CONSTRAINT fk_stock_product
 	FOREIGN KEY (p_product_id) REFERENCES "product" (product_id)
-	ON UPDATE NO ACTION ON DELETE NO ACTION;
-
-/* Add Foreign Key: fk_stock_product */
-ALTER TABLE "promotion" ADD CONSTRAINT fk_promotion_product
-	FOREIGN KEY (p_product_id) REFERENCES "product" (product_id)
-	ON UPDATE NO ACTION ON DELETE NO ACTION;
-
-/* Add Foreign Key: fk_promotion_content */
-ALTER TABLE "promotion" ADD CONSTRAINT fk_promotion_content
-	FOREIGN KEY (c_content_id) REFERENCES "content" (content_id)
 	ON UPDATE NO ACTION ON DELETE NO ACTION;

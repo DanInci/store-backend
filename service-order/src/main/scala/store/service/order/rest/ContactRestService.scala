@@ -24,8 +24,11 @@ final class ContactRestService[F[_]](
     case req @ POST -> Root / "contact" =>
       for {
         contact <- req.as[ContactRequest]
-        subject = Subject(s"${contact.name} sent you an email")
-        content = Content(s"Contact email: ${contact.email}${contact.phoneNumber.map(p => s"<br>Contact phone number: $p")}<br><br>Message: ${contact.message}")
+        receivedSubject = EmailSubject(s"${contact.name} sent you an email")
+        receivedContent = EmailContent(s"Contact email: ${contact.email}${contact.phoneNumber.map(p => s"<br>Contact phone number: $p").getOrElse("")}<br><br>Message: ${contact.message}")
+        _ <- emailAlgebra.receiveEmail(contact.email, contact.name, receivedSubject, receivedContent)
+        subject = EmailSubject("Thanks for contacting me")
+        content = EmailContent(s"Hi ${contact.name}, I received your message!")
         _ <- emailAlgebra.sendEmail(contact.email, subject, content)
         resp <- Ok()
       } yield resp

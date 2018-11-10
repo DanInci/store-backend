@@ -8,10 +8,10 @@ import store.core.PhantomType
   */
 package object email {
 
-  object Subject extends PhantomType[String]
-  type Subject = Subject.Type
+  object EmailSubject extends PhantomType[String]
+  type EmailSubject = EmailSubject.Type
 
-  object Content extends PhantomType[String]
-  type Content = Content.Type
+  object EmailContent extends PhantomType[String]
+  type EmailContent = EmailContent.Type
 
 }

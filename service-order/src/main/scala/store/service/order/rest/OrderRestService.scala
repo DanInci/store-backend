@@ -44,9 +44,9 @@ final class OrderRestService[F[_]](
         for {
           orderDef <- request.as[OrderDefinition]
           token <- orderAlgebra.placeOrder(orderDef)
-          subject = Subject(
+          subject = EmailSubject(
             s"Congrats ${orderDef.buyer.firstName}. Your order has been placed !")
-          content = Content(
+          content = EmailContent(
             s"Your order has been placed.<br>You can see order details with this code: $token")
           _ <- emailAlgebra.sendEmail(orderDef.buyer.email, subject, content)
           resp <- Created(token)

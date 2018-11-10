@@ -10,9 +10,6 @@ import store.core.PhantomType
   */
 package object product {
 
-  object PromotionID extends PhantomType[Long]
-  type PromotionID = PromotionID.Type
-
   object ProductID extends PhantomType[Long]
   type ProductID = ProductID.Type
 
@@ -34,5 +31,5 @@ package object product {
   object AddedAt extends PhantomType[LocalDateTime]
   type AddedAt = AddedAt.Type
 
-  type ModuleProductAlgebra[F[_]] = ProductAlgebra[F] with ProductStockAlgebra[F] with PromotionAlgebra[F]
+  type ModuleProductAlgebra[F[_]] = ProductAlgebra[F] with ProductStockAlgebra[F]
 }

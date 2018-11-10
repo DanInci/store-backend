@@ -19,8 +19,6 @@ trait ModuleProductServiceAsync[F[_]] {
 
   def stockRestService: ProductStockRestService[F] = _stockRestService
 
-  def promotionRestService: PromotionRestService[F] = _promotionRestService
-
   private lazy val _productRestService: ProductRestService[F] =
     new ProductRestService[F](
       productAlgebra = productAlgebra
@@ -31,18 +29,12 @@ trait ModuleProductServiceAsync[F[_]] {
       stockAlgebra = stockAlgebra
     )
 
-  private lazy val _promotionRestService: PromotionRestService[F] =
-    new PromotionRestService[F](
-      promotionAlgebra = promotionAlgebra
-    )
-
   private lazy val _service = {
     import cats.implicits._
     NonEmptyList
       .of(
         productRestService.service,
         stockRestService.service,
-        promotionRestService.service
       )
       .reduceK
   }

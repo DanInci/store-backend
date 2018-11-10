@@ -12,6 +12,8 @@ final case class StoreProductDB(
     name: String,
     price: Price,
     discount: Discount,
+    isOnPromotion: Boolean,
+    promotionImage: Option[ContentDB],
     isAvailableOnCommand: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph],

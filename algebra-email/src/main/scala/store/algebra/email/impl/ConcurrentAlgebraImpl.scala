@@ -45,11 +45,12 @@ final class ConcurrentAlgebraImpl[F[_]](config: EmailConfig)(
     Slf4jLogger.unsafeCreate[F]
 
   override def sendEmail(to: Email,
-                         subject: Subject,
-                         content: Content): F[Unit] = forkAndForget {
+                         subject: EmailSubject,
+                         content: EmailContent): F[Unit] = forkAndForget {
     for {
       message <- composeMimeMessage(to,
-                                    Email(config.from).unsafeGet(),
+                                    Email(config.user).unsafeGet(),
+                                    config.from,
                                     subject,
                                     content)
       transport <- F.delay(session.getTransport("smtp"))
@@ -65,23 +66,46 @@ final class ConcurrentAlgebraImpl[F[_]](config: EmailConfig)(
     } yield ()
   }
 
-  private def composeMimeMessage(to: Email,
-                                 from: Email,
-                                 subject: Subject,
-                                 content: Content): F[MimeMessage] = F.pure {
-    val message: MimeMessage = new MimeMessage(session)
-
-    message.setFrom(new InternetAddress(from.emailStr))
-    message.addRecipient(Message.RecipientType.TO,
-                         new InternetAddress(to.emailStr))
-    message.setSubject(subject)
-    message.setContent(content, "text/html")
-    message.saveChanges()
-    message
+  override def receiveEmail(fromEmail: Email,
+                            fromName: String,
+                            subject: EmailSubject,
+                            content: EmailContent): F[Unit] = forkAndForget {
+    for {
+      message <- composeMimeMessage(Email(config.user).unsafeGet(),
+                                    fromEmail,
+                                    fromName,
+                                    subject,
+                                    content)
+      transport <- F.delay(session.getTransport("smtp"))
+      _ <- F
+        .delay(transport.connect(config.smtpHost, config.user, config.password))
+        .onError(cleanupErr(transport))
+      _ <- logger.info("Connected to SMTP server")
+      _ <- F
+        .delay(transport.sendMessage(message, message.getAllRecipients))
+        .onError(cleanupErr(transport))
+      _ <- logger.info(
+        s"Received contact email from: ${fromEmail.emailStr} ($fromName)")
+      _ <- cleanup(transport)
+    } yield ()
   }
 
-  private def forkAndForget[A](thunk: F[A]): F[Unit] =
-    F.start(thunk).void
+  private def composeMimeMessage(to: Email,
+                                 from: Email,
+                                 fromName: String,
+                                 subject: EmailSubject,
+                                 content: EmailContent): F[MimeMessage] =
+    F.pure {
+      val message: MimeMessage = new MimeMessage(session)
+
+      message.setFrom(new InternetAddress(from.emailStr, fromName))
+      message.addRecipient(Message.RecipientType.TO,
+                           new InternetAddress(to.emailStr))
+      message.setSubject(subject)
+      message.setContent(content, "text/html")
+      message.saveChanges()
+      message
+    }
 
   private def cleanupErr(
       transport: Transport): PartialFunction[Throwable, F[Unit]] = {
@@ -92,4 +116,8 @@ final class ConcurrentAlgebraImpl[F[_]](config: EmailConfig)(
 
   private def cleanup(transport: Transport): F[Unit] =
     F.delay(transport.close())
+
+  private def forkAndForget[A](f: F[A]): F[Unit] =
+    F.start(block(f)).void
+
 }

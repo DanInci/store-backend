@@ -10,7 +10,7 @@ import store.algebra.order._
 import store.algebra.order.entity.component.ShippingMethod
 import store.core.BlockingAlgebra
 import store.core.entity.PagingInfo
-import store.db.DatabaseContext
+import store.db.{DatabaseAlgebra, DatabaseContext}
 import store.effects._
 import tsec.jws.mac._
 import tsec.jwt._
@@ -24,6 +24,7 @@ private[order] final class AsyncAlgebraImpl[F[_]](implicit val F: Async[F],
                                                   val transactor: Transactor[F],
                                                   val dbCtx: DatabaseContext[F])
     extends OrderAlgebra[F]
+    with DatabaseAlgebra[F]
     with BlockingAlgebra[F] {
 
   import store.algebra.order.db.OrderSql._
@@ -110,10 +111,6 @@ private[order] final class AsyncAlgebraImpl[F[_]](implicit val F: Async[F],
       claims = JWTClaims.default()
       token <- JWTMac.buildToString[F, HMACSHA256](claims, key)
     } yield token
-
-  private def transact[A](query: ConnectionIO[A]): F[A] = {
-    block(query.transact(transactor))
-  }
 
   private def exists[A](value: Option[A],
                         failure: AnomalousFailure): ConnectionIO[A] =

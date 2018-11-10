@@ -9,7 +9,9 @@ import store.effects.Concurrent
   */
 trait EmailAlgebra[F[_]] {
 
-  def sendEmail(to: Email, subject: Subject, content: Content): F[Unit]
+  def sendEmail(to: Email, subject: EmailSubject, content: EmailContent): F[Unit]
+
+  def receiveEmail(fromEmail: Email, fromName: String, subject: EmailSubject, content: EmailContent): F[Unit]
 
 }
 object EmailAlgebra {

@@ -1,6 +1,6 @@
 package store.algebra.order.entity
 
-import store.algebra.email.Content
+import store.algebra.email.EmailContent
 import store.algebra.order._
 import store.core.entity.Email
 
@@ -12,5 +12,5 @@ final case class ContactRequest(
     name: FullName,
     email: Email,
     phoneNumber: Option[PhoneNumber],
-    message: Content
+    message: EmailContent
 )

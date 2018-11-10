@@ -1,5 +1,7 @@
 package store.algebra.content.entity
 
+import java.util.Base64
+
 import store.algebra.content._
 
 /**
@@ -8,6 +10,28 @@ import store.algebra.content._
   */
 final case class Content(
     name: String,
-    content: Either[ContentID, BinaryContent],
+    content: String,
+    isBase64Encoded: Boolean,
     format: Format
-) extends Serializable
+) extends Serializable {
+
+  def getContent: Either[ContentID, BinaryContent] =
+    if (isBase64Encoded) Right(BinaryContent(Base64.getDecoder.decode(content)))
+    else Left(ContentID(content))
+
+}
+
+object Content {
+
+  def fromBinary(name: String, binary: BinaryContent, format: Format): Content =
+    Content(name,
+            Base64.getEncoder.encodeToString(binary),
+            isBase64Encoded = true,
+            format)
+
+  def fromContentID(name: String,
+                    contentId: ContentID,
+                    format: Format): Content =
+    Content(name, contentId, isBase64Encoded = false, format)
+
+}

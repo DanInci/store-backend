@@ -116,10 +116,11 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
             .asScalaIterator(listResult.getObjectSummaries.iterator())
             .toSeq
             .map(_.getKey): _*)
-      _ <- F
-        .delay(client.deleteObjects(deleteRequest))
-        .handleErrorWith(amazonServiceErrorHandler)
-        .void
+      _ <- if (deleteRequest.getKeys.isEmpty) F.unit
+      else
+        F.delay(client.deleteObjects(deleteRequest))
+          .handleErrorWith(amazonServiceErrorHandler)
+          .void
     } yield ()
   }
 

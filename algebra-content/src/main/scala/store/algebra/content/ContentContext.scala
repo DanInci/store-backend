@@ -20,8 +20,7 @@ object ContentContext {
       .unbound[F]
       .map(blockingExecutor =>
         new ContentContext[F] {
-          override def blockingContext: ExecutionContext = ec
-
-          override def defaultContext: ExecutionContext = ExecutionContext.fromExecutorService(blockingExecutor)
+          override def defaultContext: ExecutionContext = ec
+          override def blockingContext: ExecutionContext = ExecutionContext.fromExecutorService(blockingExecutor)
         })
 }
