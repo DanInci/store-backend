@@ -13,7 +13,7 @@ import store.db.DatabaseContext
   */
 trait ProductAlgebra[F[_]] {
 
-  def getCategories(sex: Sex): F[List[Category]]
+  def getCategories(sexFilter: Option[Sex]): F[List[Category]]
 
   def createProduct(product: StoreProductDefinition): F[ProductID]
 

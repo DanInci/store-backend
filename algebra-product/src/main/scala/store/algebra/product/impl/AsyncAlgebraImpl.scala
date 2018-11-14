@@ -32,16 +32,28 @@ final private[product] class AsyncAlgebraImpl[F[_]](
 
   import store.algebra.product.db.ProductSql._
 
-  override def getCategories(sex: Sex): F[List[Category]] = transact {
-    findCategoriesBySex(sex).map(_.map(c =>
-      Category(c.categoryId, c.name, Some(c.sex))))
-  }
+  override def getCategories(sexFilter: Option[Sex]): F[List[Category]] =
+    transact {
+      val categories = sexFilter match {
+        case Some(sex) => findCategoriesBySex(sex)
+        case None      => findCategories
+      }
+      categories.map(_.map(c => Category(c.categoryId, c.name, Some(c.sex))))
+    }
 
   /*_*/
   override def createProduct(
       productDefinition: StoreProductDefinition): F[ProductID] = {
     for {
-      productId <- transact(insertProduct(productDefinition))
+      productId <- transact {
+        for {
+          _ <- findCategoryById(productDefinition.categoryId).flatMap(exists(
+            _,
+            InvalidInputFailure(
+              s"Cateogory with id ${productDefinition.categoryId} does not exist")))
+          pid <- insertProduct(productDefinition)
+        } yield pid
+      }
       contentIds <- productDefinition.images
         .map(checkAndSaveContent(_, Path(s"product/$productId")))
         .sequence
@@ -211,8 +223,10 @@ final private[product] class AsyncAlgebraImpl[F[_]](
                    NotFoundFailure(
                      s"Product with id $currentProductId was not found")))
           currentStocks <- findStocksByProductID(current.productId)
-          previous: Option[StoreProduct] <- findPreviousByCurrentId(currentProductId).flatMap(_.map(fillStoreProductDBInfo).sequence)
-          next: Option[StoreProduct] <- findNextByCurrentId(currentProductId).flatMap(_.map(fillStoreProductDBInfo).sequence)
+          previous: Option[StoreProduct] <- findPreviousByCurrentId(
+            currentProductId).flatMap(_.map(fillStoreProductDBInfo).sequence)
+          next: Option[StoreProduct] <- findNextByCurrentId(currentProductId)
+            .flatMap(_.map(fillStoreProductDBInfo).sequence)
         } yield
           (previous,
            StoreProduct.fromStoreProductDB(current, currentStocks),
@@ -220,8 +234,16 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       }
       current <- getContentByProductId(current.productId, loadBytes = false)
         .map(images => current.copy(images = images))
-      previous <- previous.map(p => getContentByProductId(p.productId, loadBytes = false).map(images => p.copy(images = images))).sequence
-      previous <- previous.map(n => getContentByProductId(n.productId, loadBytes = false).map(images => n.copy(images = images))).sequence
+      previous <- previous
+        .map(p =>
+          getContentByProductId(p.productId, loadBytes = false).map(images =>
+            p.copy(images = images)))
+        .sequence
+      previous <- previous
+        .map(n =>
+          getContentByProductId(n.productId, loadBytes = false).map(images =>
+            n.copy(images = images)))
+        .sequence
     } yield ProductNavigation(previous, current, next)
   /*_*/
 

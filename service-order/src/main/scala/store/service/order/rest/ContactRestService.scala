@@ -16,11 +16,9 @@ final class ContactRestService[F[_]](
     emailAlgebra: EmailAlgebra[F]
 )(
     implicit F: Async[F]
-) extends Http4sDsl[F]
-    with ErrorHandlingInstances[F]
-    with OrderServiceJSON {
+) extends Http4sDsl[F] with OrderServiceJSON {
 
-  val service: HttpService[F] = HttpServiceWithErrorHandling {
+  val service: HttpService[F] = HttpService {
     case req @ POST -> Root / "contact" =>
       for {
         contact <- req.as[ContactRequest]

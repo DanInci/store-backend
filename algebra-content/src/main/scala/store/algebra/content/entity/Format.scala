@@ -29,12 +29,17 @@ object Format {
     override def formatStr: String = "jpg"
   }
 
+  case object JPEG extends Format {
+    override def formatStr: String = "jpeg"
+  }
+
   private lazy val stringToFormat: Map[String, Format] =
     allFormats.map(f => (f.toString, f)).toMap
 
   private lazy val allFormats: Set[Format] = Set(
     PNG,
-    JPG
+    JPG,
+    JPEG
   )
 
   private lazy val allFormatsString = allFormats.mkString("[", ",", "]")

@@ -20,11 +20,18 @@ object ProductSql extends ProductComposites {
 
   // CATEGORY QUERIES
 
-  def findCategoriesBySex(sex: Sex): ConnectionIO[List[CategoryDB]] = {
+  def findCategories: ConnectionIO[List[CategoryDB]] =
+    sql"SELECT category_id, name, sex FROM category".query[CategoryDB].to[List]
+
+  def findCategoriesBySex(sex: Sex): ConnectionIO[List[CategoryDB]] =
     sql"SELECT category_id, name, sex FROM category WHERE sex=$sex"
       .query[CategoryDB]
       .to[List]
-  }
+
+  def findCategoryById(id: CategoryID): ConnectionIO[Option[CategoryDB]] =
+    sql"SELECT category_id, name, sex FROM category WHERE category_id=$id"
+      .query[CategoryDB]
+      .option
 
   // CONTENT QUERIES
   def insertContent(contentDB: ContentDB): ConnectionIO[Int] =
@@ -61,14 +68,18 @@ object ProductSql extends ProductComposites {
 
   // PRODUCT QUERIES
 
-  def insertProduct(definition: StoreProductDefinition): ConnectionIO[ProductID] =
+  def insertProduct(
+      definition: StoreProductDefinition): ConnectionIO[ProductID] =
     AsyncConnectionIO.delay(LocalDateTime.now).flatMap { now =>
       sql"""INSERT INTO product (c_category_id, name, price, discount, is_on_promotion, availability_on_command, description, care, added_at)
          | VALUES (${definition.categoryId},${definition.name},${definition.price},${definition.discount},${definition.isOnPromotion},${definition.isAvailableOnCommand},${definition.description}, ${definition.care}, $now)""".stripMargin.update
         .withUniqueGeneratedKeys("product_id")
     }
 
-  def updateProductPromotion(productId: ProductID, isOnPromotion: Boolean, promotionImage: Option[ContentID]): ConnectionIO[Int] =
+  def updateProductPromotion(
+      productId: ProductID,
+      isOnPromotion: Boolean,
+      promotionImage: Option[ContentID]): ConnectionIO[Int] =
     sql"UPDATE product SET is_on_promotion=$isOnPromotion, c_promotion_image=$promotionImage WHERE product_id=$productId".update.run
 
   def findById(productId: ProductID): ConnectionIO[Option[StoreProductDB]] =
@@ -80,7 +91,8 @@ object ProductSql extends ProductComposites {
       .query[StoreProductDB]
       .option
 
-  def findNextByCurrentId(currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
+  def findNextByCurrentId(
+      currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
     sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_on_promotion, co.content_id, co.name, co.format, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
@@ -91,7 +103,8 @@ object ProductSql extends ProductComposites {
       .query[StoreProductDB]
       .option
 
-  def findPreviousByCurrentId(currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
+  def findPreviousByCurrentId(
+      currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
     sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_on_promotion, co.content_id, co.name, co.format, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
@@ -135,12 +148,16 @@ object ProductSql extends ProductComposites {
       .to[List]
   }
 
-  def findAllProductsAddedBetween(startDate: LocalDateTime, endDate: LocalDateTime): ConnectionIO[List[StoreProductDB]] =
+  def findAllProductsAddedBetween(
+      startDate: LocalDateTime,
+      endDate: LocalDateTime): ConnectionIO[List[StoreProductDB]] =
     sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_on_promotion, co.content_id, co.name, co.format, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | LEFT JOIN content co ON p.c_promotion_image = co.content_id
-         | WHERE p.added_at BETWEEN $startDate AND $endDate""".stripMargin.query[StoreProductDB].to[List]
+         | WHERE p.added_at BETWEEN $startDate AND $endDate""".stripMargin
+      .query[StoreProductDB]
+      .to[List]
 
   def deleteProduct(productId: ProductID): ConnectionIO[Int] =
     sql"DELETE FROM product WHERE product_id=$productId".update.run

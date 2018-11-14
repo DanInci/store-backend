@@ -1,13 +1,12 @@
 package store.service.product.rest
 
-import busymachines.core.InvalidInputFailure
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
 import store.algebra.product._
 import store.effects._
 import store.algebra.product.entity.StoreProductDefinition
-import store.algebra.product.entity.component.Sex
+import store.algebra.product.entity.component.{Category, Sex}
 import store.core._
 import store.core.entity.PagingInfo
 import store.http._
@@ -21,33 +20,31 @@ final class ProductRestService[F[_]](
 )(
     implicit F: Async[F]
 ) extends Http4sDsl[F]
-    with ErrorHandlingInstances[F]
     with ProductServiceJSON {
 
   private object ProductNameMatcher
       extends OptionalQueryParamDecoderMatcher[String]("name")
   private object ProductCategoryMatcher
       extends OptionalMultiQueryParamDecoderMatcher[Int]("c")
-  private object SexMatcher extends QueryParamDecoderMatcher[String]("s")
+  private object SexMatcher
+      extends OptionalQueryParamDecoderMatcher[String]("s")
   private object PageOffsetMatcher
       extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
   private object PageLimitMatcher
       extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
 
-  private val categoryService: HttpService[F] =
-    HttpServiceWithErrorHandling[F] {
-      case GET -> Root / "category" :? SexMatcher(s) =>
-        for {
-          sex <- Sex.fromString(s).left.map(_.message) match {
-            case Left(e) => F.raiseError[Sex](InvalidInputFailure(e))
-            case Right(s) => F.pure(s)
-          }
-          categories <- productAlgebra.getCategories(sex)
-          resp <- Ok(categories)
-        } yield resp
-    }
+  private val categoryService: HttpService[F] = HttpService[F] {
+    case GET -> Root / "category" :? SexMatcher(s) =>
+      for {
+        categories <- s.map(Sex.fromString).sequence match {
+          case Left(a) => F.raiseError[List[Category]](a.asThrowable)
+          case Right(s) => productAlgebra.getCategories(s)
+        }
+        resp <- Ok(categories)
+      } yield resp
+  }
 
-  private val productService: HttpService[F] = HttpServiceWithErrorHandling[F] {
+  private val productService: HttpService[F] = HttpService[F] {
     case GET -> Root / "product" / LongVar(productId) =>
       for {
         product <- productAlgebra.getProduct(ProductID(productId))
@@ -84,7 +81,7 @@ final class ProductRestService[F[_]](
       } yield resp
   }
 
-  private val promotionalProductService: HttpService[F] = HttpServiceWithErrorHandling {
+  private val promotionalProductService: HttpService[F] = HttpService {
     case GET -> Root / "product" / "promotion" =>
       for {
         products <- productAlgebra.getRecentProductPromotions

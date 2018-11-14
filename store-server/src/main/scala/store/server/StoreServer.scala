@@ -2,10 +2,10 @@ package store.server
 
 import store.effects._
 import fs2.Stream
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import store.db.config._
 import store.db._
 import doobie.util.transactor.Transactor
+import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 import monix.execution.Scheduler
 import store.algebra.content.{ContentContext, FileStorageConfig, S3StorageConfig}
 import store.algebra.email.{EmailConfig, EmailContext}
@@ -15,10 +15,10 @@ import store.algebra.email.{EmailConfig, EmailContext}
   * @since 04/08/2018
   */
 class StoreServer[F[_]: Concurrent] private (
-    implicit scheduler: Scheduler
+    implicit
+    val scheduler: Scheduler,
+    val logger: SelfAwareStructuredLogger[F]
 ) {
-
-  private val logger = Slf4jLogger.unsafeCreate[F]
 
   def init: Stream[F, (StoreServerConfig, ModuleStoreServer[F])] =
     for {
@@ -45,7 +45,7 @@ class StoreServer[F[_]: Concurrent] private (
 
 object StoreServer {
 
-  def concurrent[F[_]: Concurrent](implicit scheduler: Scheduler): Stream[F, StoreServer[F]] =
+  def concurrent[F[_]: Concurrent](implicit scheduler: Scheduler, logger: SelfAwareStructuredLogger[F]): Stream[F, StoreServer[F]] =
     Stream.eval(Concurrent.apply[F].delay(new StoreServer[F]))
 
 }

@@ -14,11 +14,9 @@ import store.http._
   */
 final class ProductStockRestService[F[_]: Async](
     stockAlgebra: ProductStockAlgebra[F]
-) extends Http4sDsl[F]
-    with ErrorHandlingInstances[F]
-    with ProductServiceJSON {
+) extends Http4sDsl[F] with ProductServiceJSON {
 
-  private val stockService: HttpService[F] = HttpServiceWithErrorHandling {
+  private val stockService: HttpService[F] = HttpService[F] {
     case GET -> Root / "product" / LongVar(productId) / "stock" =>
       for {
         stocks <- stockAlgebra.getStock(ProductID(productId))

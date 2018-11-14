@@ -23,9 +23,7 @@ final class OrderRestService[F[_]](
     emailAlgebra: EmailAlgebra[F]
 )(
     implicit F: Async[F]
-) extends Http4sDsl[F]
-    with ErrorHandlingInstances[F]
-    with OrderServiceJSON {
+) extends Http4sDsl[F] with OrderServiceJSON {
 
   private object OrderCodeMatcher
       extends QueryParamDecoderMatcher[String]("code")
@@ -39,7 +37,7 @@ final class OrderRestService[F[_]](
       extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
 
   private val orderPlacementService: HttpService[F] =
-    HttpServiceWithErrorHandling {
+    HttpService[F] {
       case request @ POST -> Root / "order" =>
         for {
           orderDef <- request.as[OrderDefinition]
@@ -53,7 +51,7 @@ final class OrderRestService[F[_]](
         } yield resp
     }
 
-  private val orderService: HttpService[F] = HttpServiceWithErrorHandling {
+  private val orderService: HttpService[F] = HttpService[F] {
     case GET -> Root / "order" :? StartDateMatcher(startDate) +& EndDateMatcher(
           endDate) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
       for {
@@ -87,7 +85,7 @@ final class OrderRestService[F[_]](
   }
 
   private val shippingMethodService: HttpService[F] =
-    HttpServiceWithErrorHandling {
+    HttpService[F] {
       case GET -> Root / "shipping" =>
         for {
           shippingMethods <- orderAlgebra.getShippingMethods
