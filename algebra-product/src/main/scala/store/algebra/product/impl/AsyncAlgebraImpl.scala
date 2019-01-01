@@ -41,6 +41,27 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       categories.map(_.map(c => Category(c.categoryId, c.name, Some(c.sex))))
     }
 
+  override def createCategory(definition: CategoryDefinition): F[CategoryID] =
+    transact {
+      for {
+        categories <- findCategoriesBySex(definition.sex)
+        _ <- if (categories.exists(_.name == definition.name))
+          raiseError(InvalidInputFailure(
+            s"Category with name ${definition.name} of sex ${definition.sex} already exists"))
+        else AsyncConnectionIO.unit
+        categoryId <- insertCategory(definition)
+      } yield categoryId
+    }
+
+  override def removeCategory(categoryId: CategoryID): F[Unit] = transact {
+    for {
+      _ <- findCategoryById(categoryId).flatMap(
+        exists(_,
+               NotFoundFailure(s"Category with id $categoryId was not found")))
+      _ <- deleteCategory(categoryId)
+    } yield ()
+  }
+
   /*_*/
   override def createProduct(
       productDefinition: StoreProductDefinition): F[ProductID] = {
@@ -55,19 +76,16 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         } yield pid
       }
       contentIds <- productDefinition.images
-        .map(checkAndSaveContent(_, Path(s"product/$productId")))
-        .sequence
-      promotionImageId <- productDefinition.promotionImage
-        .map(checkAndSaveContent(_, Path(s"product/$productId")))
+        .map(
+          checkAndSaveContent(_,
+                              Path(s"product/$productId"),
+                              isPromotion = false))
         .sequence
       _ <- transact {
         for {
           _ <- contentIds
             .map(cid => mapContentToProduct(cid, productId))
             .sequence
-          _ <- updateProductPromotion(productId,
-                                      promotionImageId.nonEmpty,
-                                      promotionImageId)
           _ <- productDefinition.stocks
             .map(s => addStockToProduct(s, productId))
             .sequence
@@ -133,8 +151,6 @@ final private[product] class AsyncAlgebraImpl[F[_]](
               _,
               NotFoundFailure(s"Product with id $productId was not found")))
           _ <- deleteStockByProductID(productId)
-          _ <- deleteContentByID(
-            product.promotionImage.map(_.contentId).getOrElse(ContentID("")))
           _ <- deleteContentsByProductID(productId)
           _ <- deleteProduct(productId)
         } yield ()
@@ -191,26 +207,32 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       } yield ()
     }
 
-  override def getRecentProductPromotions: F[List[ProductPromotion]] =
+  override def getPromotions: F[List[Content]] =
     for {
-      promotionProducts <- transact {
-        for {
-          lastAddedProduct <- findByNameAndCategoriesOrderedByAddedAtDesc(
-            None,
-            Nil,
-            PageOffset(0),
-            PageLimit(1))
-          products <- lastAddedProduct.headOption match {
-            case Some(last) =>
-              val endDate = last.addedAt
-              val startDate = endDate.minusDays(endDate.getDayOfMonth.toLong)
-              findAllProductsAddedBetween(startDate, endDate)
-            case None => pure(List.empty[StoreProductDB])
-          }
-        } yield products.filter(_.isOnPromotion)
-      }
-      promotions <- promotionProducts.map(convertToPromotionProduct).sequence
+      contentListDB <- transact(findPromotionContent)
+      promotions <- contentListDB
+        .map(c => fillContentDBInfo(c, loadBytes = false))
+        .sequence
     } yield promotions
+
+  override def createPromotion(content: Content): F[ContentID] =
+    checkAndSaveContent(content, Path(s"promotion"), isPromotion = true)
+
+  override def removePromotion(contentId: ContentID): F[Unit] =
+    for {
+      id <- transact {
+        for {
+          allPromotions <- findPromotionContent
+          maybePromotion = allPromotions.find(_.contentId.contains(contentId))
+          promotion <- exists(
+            maybePromotion,
+            NotFoundFailure(
+              s"Promotional content with $contentId was not found"))
+          _ <- deleteContentByID(promotion.contentId)
+        } yield promotion.contentId
+      }
+      _ <- contentStorageAlgebra.removeContent(id)
+    } yield ()
 
   /*_*/
   override def getProductNavigation(
@@ -247,7 +269,9 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     } yield ProductNavigation(previous, current, next)
   /*_*/
 
-  private def checkAndSaveContent(content: Content, path: Path): F[ContentID] =
+  private def checkAndSaveContent(content: Content,
+                                  path: Path,
+                                  isPromotion: Boolean): F[ContentID] =
     content.getContent match {
       case Left(cid) =>
         transact(
@@ -263,7 +287,10 @@ final private[product] class AsyncAlgebraImpl[F[_]](
           contentId <- contentStorageAlgebra.saveContent(path,
                                                          content.format,
                                                          binary)
-          contentDB = ContentDB(contentId, content.name, content.format)
+          contentDB = ContentDB(contentId,
+                                content.name,
+                                content.format,
+                                isPromotion)
           _ <- transact(insertContent(contentDB))
         } yield contentId
 
@@ -286,11 +313,6 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         .sequence
     } yield contents
   }
-
-  private def convertToPromotionProduct(
-      storeProduct: StoreProductDB): F[ProductPromotion] =
-    fillContentDBInfo(storeProduct.promotionImage.get, loadBytes = false)
-      .map(c => ProductPromotion.fromStoreProductDB(storeProduct, c))
 
   private def fillStoreProductDBInfo(
       s: StoreProductDB): ConnectionIO[StoreProduct] =

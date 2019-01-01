@@ -15,8 +15,6 @@ final case class StoreProductDefinition(
     stocks: List[Stock],
     price: Price,
     discount: Discount,
-    isOnPromotion: Boolean,
-    promotionImage: Option[Content],
     isAvailableOnCommand: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph]

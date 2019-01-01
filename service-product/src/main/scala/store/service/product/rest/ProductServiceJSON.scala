@@ -2,6 +2,7 @@ package store.service.product.rest
 
 import java.time.LocalDateTime
 
+import store.algebra.content.ContentID
 import store.algebra.content.entity._
 import store.json._
 import store.algebra.product._
@@ -41,6 +42,8 @@ trait ProductServiceJSON extends StoreCoreJSON {
 
   implicit val productIDCirceCodec: Codec[ProductID] = phantomCodec[Long, ProductID.Phantom]
 
+  implicit val contentIDCirceCodec: Codec[ContentID] = phantomCodec[String, ContentID.Phantom]
+
   implicit val categoryIDCirceCodec: Codec[CategoryID] = phantomCodec[Int, CategoryID.Phantom]
 
   implicit val priceCirceCodec: Codec[Price] = phantomCodec[Double, Price.Phantom]
@@ -55,13 +58,13 @@ trait ProductServiceJSON extends StoreCoreJSON {
 
   implicit val categoryCodec: Codec[Category] = derive.codec[Category]
 
+  implicit val categoryDefinitionCodec: Codec[CategoryDefinition] = derive.codec[CategoryDefinition]
+
   implicit val stockCodec: Codec[Stock] = derive.codec[Stock]
 
   implicit val storeProductCodec: Codec[StoreProduct] = derive.codec[StoreProduct]
 
   implicit val storeProductDefinitionCodec: Codec[StoreProductDefinition] = derive.codec[StoreProductDefinition]
-
-  implicit val productPromotionCodec: Codec[ProductPromotion] = derive.codec[ProductPromotion]
 
   implicit val productNavigationCodec: Codec[ProductNavigation] = derive.codec[ProductNavigation]
 

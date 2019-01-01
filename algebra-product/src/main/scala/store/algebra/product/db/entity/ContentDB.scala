@@ -10,5 +10,6 @@ import store.algebra.content.entity.Format
 final case class ContentDB(
     contentId: ContentID,
     name: String,
-    format: Format
+    format: Format,
+    isPromotionImage: Boolean
 )
