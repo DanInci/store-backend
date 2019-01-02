@@ -89,7 +89,7 @@ object ProductSql extends ProductComposites {
     }
 
   def findById(productId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, co.content_id, co.name, co.format, co.is_promotion_image, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | WHERE p.product_id=$productId""".stripMargin
@@ -98,7 +98,7 @@ object ProductSql extends ProductComposites {
 
   def findNextByCurrentId(
       currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, co.content_id, co.name, co.format, co.is_promotion_image, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | WHERE p.product_id > $currentProductId
@@ -109,7 +109,7 @@ object ProductSql extends ProductComposites {
 
   def findPreviousByCurrentId(
       currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, co.content_id, co.name, co.format, co.is_promotion_image, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | WHERE p.product_id < $currentProductId
@@ -140,7 +140,7 @@ object ProductSql extends ProductComposites {
       }
     }
 
-    (sql"""SELECT p.product_id, p.name, p.price, p.discount, co.content_id, co.name, co.format, co.is_promotion_image, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id""".stripMargin
       ++ Fragment.const(whereClause) ++
@@ -153,7 +153,7 @@ object ProductSql extends ProductComposites {
   def findAllProductsAddedBetween(
       startDate: LocalDateTime,
       endDate: LocalDateTime): ConnectionIO[List[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, co.content_id, co.name, co.format, co.is_promotion_image, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | WHERE p.added_at BETWEEN $startDate AND $endDate""".stripMargin
