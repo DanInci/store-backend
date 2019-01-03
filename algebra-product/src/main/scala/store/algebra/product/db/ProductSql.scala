@@ -129,7 +129,7 @@ object ProductSql extends ProductComposites {
         case Nil => None
         case c =>
           Some(
-            s"c.category_id IN ${c.map(v => s"'$v'").mkString_("(", ",", ")")}")
+            s"ca.category_id IN ${c.map(v => s"'$v'").mkString_("(", ",", ")")}")
       }
 
       (nameFilter, categoriesFilter) match {
@@ -142,7 +142,7 @@ object ProductSql extends ProductComposites {
 
     (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
-         | INNER JOIN category ca ON p.c_category_id = ca.category_id""".stripMargin
+         | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
       sql""" ORDER BY p.added_at DESC
            | LIMIT $limit OFFSET ${offset * limit}""".stripMargin)
