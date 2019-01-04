@@ -141,13 +141,40 @@ object ProductSql extends ProductComposites {
     }
 
     (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
-         | FROM product p
-         | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
+          | FROM product p
+          | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
       sql""" ORDER BY p.added_at DESC
            | LIMIT $limit OFFSET ${offset * limit}""".stripMargin)
       .query[StoreProductDB]
       .to[List]
+  }
+
+  def countByNameAndCategories(
+      name: Option[String],
+      categories: List[CategoryID]): ConnectionIO[Count] = {
+    val whereClause = {
+      val nameFilter = name.map(n => s"UPPER(p.name) LIKE UPPER('$n%')")
+      val categoriesFilter = categories match {
+        case Nil => None
+        case c =>
+          Some(
+            s"p.c_category_id IN ${c.map(v => s"'$v'").mkString_("(", ",", ")")}")
+      }
+
+      (nameFilter, categoriesFilter) match {
+        case (Some(n), Some(c)) => s"WHERE $n AND $c"
+        case (Some(n), None)    => s"WHERE $n"
+        case (None, Some(c))    => s"WHERE $c"
+        case (None, None)       => ""
+      }
+    }
+
+    (sql"""SELECT COUNT(*)
+          | FROM product p """.stripMargin
+      ++ Fragment.const(whereClause))
+      .query[Count]
+      .unique
   }
 
   def findAllProductsAddedBetween(

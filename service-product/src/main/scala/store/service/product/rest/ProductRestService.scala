@@ -95,12 +95,22 @@ final class ProductRestService[F[_]](
 
     case GET -> Root / "product" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
           categories) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
+      val checkedName = name.filterNot(n => n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n.contains("UPDATE"))
       for {
         products <- productAlgebra.getProducts(
-          name,
+          checkedName,
           categories.toOption.getOrElse(Nil).map(CategoryID.apply),
           PagingInfo(offset, limit))
         resp <- Ok(products)
+      } yield resp
+
+    case GET -> Root / "product" / "count" :? ProductNameMatcher(name) +& ProductCategoryMatcher(categories) =>
+      val checkedName = name.filterNot(n => n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n.contains("UPDATE"))
+      for {
+          count <- productAlgebra.getProductsCount(
+          checkedName,
+          categories.toOption.getOrElse(Nil).map(CategoryID.apply))
+        resp <- Ok(count)
       } yield resp
 
     case request @ POST -> Root / "product" =>

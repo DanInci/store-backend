@@ -30,6 +30,8 @@ trait ProductAlgebra[F[_]] {
 
   def getProducts(nameFilter: Option[String], categoryFilter: List[CategoryID], pagingInfo: PagingInfo = PagingInfo.defaultPagingInfo): F[List[StoreProduct]]
 
+  def getProductsCount(nameFilter: Option[String], categoryFilter: List[CategoryID]): F[Count]
+
   def getProduct(productId: ProductID): F[StoreProduct]
 
   def getProductNavigation(currentProductId: ProductID): F[ProductNavigation]

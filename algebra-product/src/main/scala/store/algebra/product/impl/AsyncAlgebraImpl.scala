@@ -127,6 +127,12 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     } yield products
   } /*_*/
 
+  override def getProductsCount(nameFilter: Option[String], categoryFilter: List[CategoryID]): F[Count] = transact {
+    for {
+      count <- countByNameAndCategories(nameFilter, categoryFilter)
+    } yield count
+  }
+
   override def getProduct(productId: ProductID): F[StoreProduct] = {
     for {
       product <- transact {
