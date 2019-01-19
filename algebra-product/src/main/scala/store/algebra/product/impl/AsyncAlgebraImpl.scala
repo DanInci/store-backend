@@ -140,12 +140,14 @@ final private[product] class AsyncAlgebraImpl[F[_]](
   override def getProducts(nameFilter: Option[String],
                            categoryFilter: List[CategoryID],
                            ageFilter: Option[MonthsAge],
+                           favouritesFilter: Option[Boolean],
                            pagingInfo: PagingInfo): F[List[StoreProduct]] = {
     for {
       productsDB <- transact {
         for {
           productsDb <- findProductsOrderedByAddedAtDesc(nameFilter,
                                                          ageFilter.map(_.age),
+                                                         favouritesFilter,
                                                          categoryFilter,
                                                          pagingInfo.offset,
                                                          pagingInfo.limit)
@@ -172,10 +174,14 @@ final private[product] class AsyncAlgebraImpl[F[_]](
 
   override def getProductsCount(nameFilter: Option[String],
                                 categoryFilter: List[CategoryID],
-                                ageFilter: Option[MonthsAge]): F[Count] =
+                                ageFilter: Option[MonthsAge],
+                                favouritesFilter: Option[Boolean]): F[Count] =
     transact {
       for {
-        count <- countProducts(nameFilter, ageFilter.map(_.age), categoryFilter)
+        count <- countProducts(nameFilter,
+                               ageFilter.map(_.age),
+                               favouritesFilter,
+                               categoryFilter)
       } yield count
     }
 
@@ -296,7 +302,8 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       currentProductId: ProductID,
       nameFilter: Option[String],
       categoryFilter: List[CategoryID],
-      ageFilter: Option[MonthsAge]): F[ProductNavigation] =
+      ageFilter: Option[MonthsAge],
+      favouritesFilter: Option[Boolean]): F[ProductNavigation] =
     for {
       (previous, current, next) <- transact {
         for {
@@ -309,21 +316,28 @@ final private[product] class AsyncAlgebraImpl[F[_]](
           maybePrevious <- findPreviousByAddedAt(current.addedAt,
                                                  nameFilter,
                                                  ageFilter.map(_.age),
+                                                 favouritesFilter,
                                                  categoryFilter)
           previous <- maybePrevious match {
             case Some(p) =>
               AsyncConnectionIO.pure[Option[StoreProductDB]](Some(p))
-            case None => getLastProduct(nameFilter, categoryFilter, ageFilter)
+            case None =>
+              getLastProduct(nameFilter,
+                             categoryFilter,
+                             ageFilter,
+                             favouritesFilter)
           }
           previous <- previous.map(fillStoreProductDBInfo).sequence
           maybeNext <- findNextByAddedAt(current.addedAt,
                                          nameFilter,
                                          ageFilter.map(_.age),
+                                         favouritesFilter,
                                          categoryFilter)
           next <- maybeNext match {
             case Some(n) =>
               AsyncConnectionIO.pure[Option[StoreProductDB]](Some(n))
-            case None => getFirstProduct(nameFilter, categoryFilter)
+            case None =>
+              getFirstProduct(nameFilter, categoryFilter, favouritesFilter)
           }
           next <- next.map(fillStoreProductDBInfo).sequence
         } yield (previous, current, next)
@@ -346,23 +360,33 @@ final private[product] class AsyncAlgebraImpl[F[_]](
   private def getLastProduct(
       nameFilter: Option[String],
       categoryFilter: List[CategoryID],
-      ageFilter: Option[MonthsAge]): ConnectionIO[Option[StoreProductDB]] =
+      ageFilter: Option[MonthsAge],
+      favouritesFilter: Option[Boolean]): ConnectionIO[Option[StoreProductDB]] =
     ageFilter match {
       case Some(filter) =>
         val currentDate = LocalDate.now().atStartOfDay()
         val referenceTime = currentDate.minusMonths(filter.age.toLong)
-        findPreviousByAddedAt(referenceTime, nameFilter, None, categoryFilter)
+        findPreviousByAddedAt(referenceTime,
+                              nameFilter,
+                              None,
+                              favouritesFilter,
+                              categoryFilter)
       case None =>
         val startOfTime = LocalDate.of(2000, 1, 1).atStartOfDay()
-        findPreviousByAddedAt(startOfTime, nameFilter, None, categoryFilter)
+        findPreviousByAddedAt(startOfTime,
+                              nameFilter,
+                              None,
+                              favouritesFilter,
+                              categoryFilter)
     }
 
   private def getFirstProduct(
       nameFilter: Option[String],
-      categoryFilter: List[CategoryID]
+      categoryFilter: List[CategoryID],
+      favouritesFilter: Option[Boolean],
   ): ConnectionIO[Option[StoreProductDB]] = {
     val now = LocalDateTime.now()
-    findNextByAddedAt(now, nameFilter, None, categoryFilter)
+    findNextByAddedAt(now, nameFilter, None, favouritesFilter, categoryFilter)
   }
 
   private def checkAndSaveContent(content: Content,
@@ -419,15 +443,10 @@ final private[product] class AsyncAlgebraImpl[F[_]](
       val image = Image.fromStream(imageStream)
       val scaled = image.scaleTo(scaleWidth, scaleHeight)
       val writer = JpegWriter().withCompression(80).withProgressive(true)
-      val outputStream = scaled.stream(writer)
-      val outputImage = Stream
-        .continually(outputStream.read)
-        .takeWhile(_ != -1)
-        .map(_.toByte)
-        .toArray
-      F.pure(BinaryContent(outputImage))
+      val output = scaled.bytes(writer)
+      F.pure(BinaryContent(output))
     } catch {
-      case _ : ImageParseException =>
+      case _: ImageParseException =>
         F.raiseError(InvalidInputFailure(s"Image is unparsable"))
     }
   }

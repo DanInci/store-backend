@@ -16,6 +16,7 @@ final case class StoreProductDefinition(
     price: Price,
     discount: Discount,
     isAvailableOnCommand: Boolean,
+    isFavourite: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph]
 ) extends Serializable

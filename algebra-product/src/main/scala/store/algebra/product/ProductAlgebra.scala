@@ -18,13 +18,13 @@ trait ProductAlgebra[F[_]] {
 
   def updateProduct(productId: ProductID, updates: StoreProductDefinition): F[ProductID]
 
-  def getProducts(nameFilter: Option[String], categoryFilter: List[CategoryID], ageFilter: Option[MonthsAge], pagingInfo: PagingInfo = PagingInfo.defaultPagingInfo): F[List[StoreProduct]]
+  def getProducts(nameFilter: Option[String], categoryFilter: List[CategoryID], ageFilter: Option[MonthsAge], favouritesFilter: Option[Boolean], pagingInfo: PagingInfo = PagingInfo.defaultPagingInfo): F[List[StoreProduct]]
 
-  def getProductsCount(nameFilter: Option[String], categoryFilter: List[CategoryID], ageFilter: Option[MonthsAge]): F[Count]
+  def getProductsCount(nameFilter: Option[String], categoryFilter: List[CategoryID], ageFilter: Option[MonthsAge], favouritesFilter: Option[Boolean]): F[Count]
 
   def getProduct(productId: ProductID): F[StoreProduct]
 
-  def getProductNavigation(currentProductId: ProductID, nameFilter: Option[String], categoryFilter: List[CategoryID], ageFilter: Option[MonthsAge]): F[ProductNavigation]
+  def getProductNavigation(currentProductId: ProductID, nameFilter: Option[String], categoryFilter: List[CategoryID], ageFilter: Option[MonthsAge], favouritesFilter: Option[Boolean]): F[ProductNavigation]
 
   def removeProduct(productId: ProductID): F[Unit]
 

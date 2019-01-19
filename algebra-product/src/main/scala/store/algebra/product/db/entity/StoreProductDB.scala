@@ -13,6 +13,7 @@ final case class StoreProductDB(
     price: Price,
     discount: Discount,
     isAvailableOnCommand: Boolean,
+    isFavourite: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph],
     addedAt: AddedAt,

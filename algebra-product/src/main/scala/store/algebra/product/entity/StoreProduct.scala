@@ -19,6 +19,7 @@ final case class StoreProduct(
     price: Price,
     discount: Discount,
     isAvailableOnCommand: Boolean,
+    isFavourite: Boolean,
     description: List[DescParagraph],
     care: List[CareParagraph],
     addedAt: AddedAt
@@ -40,6 +41,7 @@ object StoreProduct {
       spdb.price,
       spdb.discount,
       spdb.isAvailableOnCommand,
+      spdb.isFavourite,
       spdb.description,
       spdb.care,
       spdb.addedAt

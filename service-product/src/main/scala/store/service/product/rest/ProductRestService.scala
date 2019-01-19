@@ -25,6 +25,8 @@ final class ProductRestService[F[_]](
       extends OptionalQueryParamDecoderMatcher[String]("name")
   private object ProductMonthsAgeMatcher
       extends OptionalQueryParamDecoderMatcher[Int]("age")
+  private object ProductFavouritesMatcher
+      extends OptionalQueryParamDecoderMatcher[Boolean]("favourite")
   private object ProductCategoryMatcher
       extends OptionalMultiQueryParamDecoderMatcher[Int]("c")
   private object PageOffsetMatcher
@@ -41,7 +43,7 @@ final class ProductRestService[F[_]](
 
     case GET -> Root / "product" / LongVar(productId) / "navigation" :? ProductNameMatcher(
           name) +& ProductCategoryMatcher(categories) +& ProductMonthsAgeMatcher(
-          age) =>
+          age) +& ProductFavouritesMatcher(isFavourite) =>
       val checkedName = name.filterNot(
         n =>
           n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n
@@ -52,13 +54,15 @@ final class ProductRestService[F[_]](
           ProductID(productId),
           checkedName,
           categories.toOption.getOrElse(Nil).map(CategoryID.apply),
-          monthsAge)
+          monthsAge,
+          isFavourite)
         resp <- Ok(product)
       } yield resp
 
     case GET -> Root / "product" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
-          categories) +& ProductMonthsAgeMatcher(age) +& PageOffsetMatcher(
-          offset) +& PageLimitMatcher(limit) =>
+          categories) +& ProductMonthsAgeMatcher(age) +& ProductFavouritesMatcher(
+          isFavourite) +& PageOffsetMatcher(offset) +& PageLimitMatcher(
+          limit) =>
       val checkedName = name.filterNot(
         n =>
           n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n
@@ -69,12 +73,14 @@ final class ProductRestService[F[_]](
           checkedName,
           categories.toOption.getOrElse(Nil).map(CategoryID.apply),
           monthsAge,
+          isFavourite,
           PagingInfo(offset, limit))
         resp <- Ok(products)
       } yield resp
 
     case GET -> Root / "product" / "count" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
-          categories) +& ProductMonthsAgeMatcher(age) =>
+          categories) +& ProductMonthsAgeMatcher(age) +& ProductFavouritesMatcher(
+          isFavourite) =>
       val checkedName = name.filterNot(
         n =>
           n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n
@@ -84,7 +90,8 @@ final class ProductRestService[F[_]](
         count <- productAlgebra.getProductsCount(
           checkedName,
           categories.toOption.getOrElse(Nil).map(CategoryID.apply),
-          monthsAge)
+          monthsAge,
+          isFavourite)
         resp <- Ok(count)
       } yield resp
 

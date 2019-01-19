@@ -85,29 +85,32 @@ object ProductSql extends ProductComposites {
   def insertProduct(
       definition: StoreProductDefinition): ConnectionIO[ProductID] =
     AsyncConnectionIO.delay(LocalDateTime.now).flatMap { now =>
-      sql"""INSERT INTO product (c_category_id, name, price, discount, availability_on_command, description, care, added_at)
-         | VALUES (${definition.categoryId},${definition.name},${definition.price},${definition.discount},${definition.isAvailableOnCommand},${definition.description}, ${definition.care}, $now)""".stripMargin.update
+      sql"""INSERT INTO product (c_category_id, name, price, discount, is_available_on_command, is_favourite, description, care, added_at)
+         | VALUES (${definition.categoryId},${definition.name},${definition.price},${definition.discount},${definition.isAvailableOnCommand},${definition.isFavourite},${definition.description}, ${definition.care}, $now)""".stripMargin.update
         .withUniqueGeneratedKeys("product_id")
     }
 
   def updateProductById(productId: ProductID,
                         updates: StoreProductDefinition): ConnectionIO[Int] =
-    sql"UPDATE product SET c_category_id=${updates.categoryId}, name=${updates.name}, price=${updates.price}, discount=${updates.discount}, availability_on_command=${updates.isAvailableOnCommand}, description=${updates.description}, care=${updates.care} WHERE product_id=$productId".update.run
+    sql"UPDATE product SET c_category_id=${updates.categoryId}, name=${updates.name}, price=${updates.price}, discount=${updates.discount}, is_available_on_command=${updates.isAvailableOnCommand}, is_favourite=${updates.isFavourite}, description=${updates.description}, care=${updates.care} WHERE product_id=$productId".update.run
 
   def findById(productId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_available_on_command, p.is_favourite, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | WHERE p.product_id=$productId""".stripMargin
       .query[StoreProductDB]
       .option
 
-  def findNextByAddedAt(addedAt: LocalDateTime,
-                        name: Option[String],
-                        age: Option[Int],
-                        categories: List[CategoryID]): ConnectionIO[Option[StoreProductDB]] = {
-    val whereClause = getWhereClause(name, age, None, Some(addedAt), categories)
-    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+  def findNextByAddedAt(
+      addedAt: LocalDateTime,
+      name: Option[String],
+      age: Option[Int],
+      isFavourite: Option[Boolean],
+      categories: List[CategoryID]): ConnectionIO[Option[StoreProductDB]] = {
+    val whereClause =
+      getWhereClause(name, age, isFavourite, None, Some(addedAt), categories)
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_available_on_command, p.is_favourite, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
           | FROM product p
           | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
@@ -117,32 +120,35 @@ object ProductSql extends ProductComposites {
       .option
   }
 
-
-  def findPreviousByAddedAt(addedAt: LocalDateTime,
-                            name: Option[String],
-                            age: Option[Int],
-                            categories: List[CategoryID]): ConnectionIO[Option[StoreProductDB]] = {
-    val whereClause = getWhereClause(name, age, Some(addedAt), None, categories)
-    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+  def findPreviousByAddedAt(
+      addedAt: LocalDateTime,
+      name: Option[String],
+      age: Option[Int],
+      isFavourite: Option[Boolean],
+      categories: List[CategoryID]): ConnectionIO[Option[StoreProductDB]] = {
+    val whereClause =
+      getWhereClause(name, age, isFavourite, Some(addedAt), None, categories)
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_available_on_command, p.is_favourite, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
-         sql"""| ORDER BY p.added_at ASC
+      sql"""| ORDER BY p.added_at ASC
                | LIMIT 1""".stripMargin)
       .query[StoreProductDB]
       .option
   }
 
-
   def findProductsOrderedByAddedAtDesc(
       name: Option[String],
       age: Option[Int],
+      isFavourite: Option[Boolean],
       categories: List[CategoryID],
       offset: PageOffset,
       limit: PageLimit): ConnectionIO[List[StoreProductDB]] = {
-    val whereClause = getWhereClause(name, age, None, None, categories)
+    val whereClause =
+      getWhereClause(name, age, isFavourite, None, None, categories)
 
-    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_available_on_command, p.is_favourite, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
           | FROM product p
           | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
       ++ Fragment.const(whereClause) ++
@@ -152,11 +158,12 @@ object ProductSql extends ProductComposites {
       .to[List]
   }
 
-  def countProducts(
-      name: Option[String],
-      age: Option[Int],
-      categories: List[CategoryID]): ConnectionIO[Count] = {
-    val whereClause = getWhereClause(name, age, None, None, categories)
+  def countProducts(name: Option[String],
+                    age: Option[Int],
+                    isFavourite: Option[Boolean],
+                    categories: List[CategoryID]): ConnectionIO[Count] = {
+    val whereClause =
+      getWhereClause(name, age, isFavourite, None, None, categories)
     (sql"""SELECT COUNT(*)
           | FROM product p
           | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
@@ -168,7 +175,7 @@ object ProductSql extends ProductComposites {
   def findAllProductsAddedBetween(
       startDate: LocalDateTime,
       endDate: LocalDateTime): ConnectionIO[List[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.is_available_on_command, p.is_favourite, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
          | INNER JOIN category ca ON p.c_category_id = ca.category_id
          | WHERE p.added_at BETWEEN $startDate AND $endDate""".stripMargin
@@ -217,6 +224,7 @@ object ProductSql extends ProductComposites {
 
   private def getWhereClause(name: Option[String],
                              age: Option[Int],
+                             isFavourite: Option[Boolean],
                              addedAfter: Option[LocalDateTime],
                              addedBefore: Option[LocalDateTime],
                              categories: List[CategoryID]): String = {
@@ -228,16 +236,21 @@ object ProductSql extends ProductComposites {
         None
       } else {
         val formattedDate =
-          referenceTime.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
+          referenceTime.format(
+            DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
         Some(s"p.added_at >= '$formattedDate'")
       }
     })
+    val favouriteFilter =
+      isFavourite.map(isFavourite => s"p.is_favourite=$isFavourite")
     val addedAfterFilter = addedAfter.map(time => {
-      val formattedTime = time.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
+      val formattedTime =
+        time.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
       s"p.added_at > '$formattedTime'"
     })
     val addedBeforeFilter = addedBefore.map(time => {
-      val formattedTime = time.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
+      val formattedTime =
+        time.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
       s"p.added_at < '$formattedTime'"
     })
     val categoriesFilter = categories match {
@@ -249,6 +262,7 @@ object ProductSql extends ProductComposites {
 
     val filterList = List(nameFilter,
                           ageFilter,
+                          favouriteFilter,
                           addedAfterFilter,
                           addedBeforeFilter,
                           categoriesFilter)
