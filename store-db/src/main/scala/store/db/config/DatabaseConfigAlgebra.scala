@@ -17,6 +17,7 @@ object DatabaseConfigAlgebra {
   def initializeSQLDb[F[_]: Sync](config: DatabaseConfig): F[Int] = Sync[F].delay {
     val fw = new Flyway()
     fw.setDataSource(config.url, config.user, config.password)
+    fw.setLocations(config.locations: _*)
     if (config.clean) fw.clean()
     fw.migrate()
   }

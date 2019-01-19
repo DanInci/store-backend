@@ -10,9 +10,11 @@ import store.config.ConfigLoader
 final case class StoreServerConfig(
     host: String,
     port: Int,
-    apiRoot: String
+    apiRoot: String,
+    mode: String
 )
 
 object StoreServerConfig extends ConfigLoader[StoreServerConfig] {
-  override def default[F[_] : Sync]: F[StoreServerConfig] = this.load[F]("store.server")
+  override def default[F[_]: Sync]: F[StoreServerConfig] =
+    this.load[F]("store.server")
 }

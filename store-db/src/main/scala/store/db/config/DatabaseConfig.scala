@@ -13,9 +13,14 @@ final case class DatabaseConfig(
     user: String,
     password: String,
     clean: Boolean,
+    locations: List[String],
     connectionPoolSize: Int
 )
 
 object DatabaseConfig extends ConfigLoader[DatabaseConfig] {
-  override def default[F[_] : Sync]: F[DatabaseConfig] = this.load[F]("store.db")
+  override def default[F[_]: Sync]: F[DatabaseConfig] =
+    this.load[F]("store.db")
+
+  def testing[F[_]: Sync]: F[DatabaseConfig] =
+    this.load[F]("store.test")
 }
