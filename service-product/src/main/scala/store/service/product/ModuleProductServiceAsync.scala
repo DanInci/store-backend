@@ -17,11 +17,25 @@ trait ModuleProductServiceAsync[F[_]] {
 
   def productRestService: ProductRestService[F] = _productRestService
 
+  def categoryRestService: CategoryRestService[F] = _categoryRestService
+
+  def promotionRestService: PromotionRestService[F] = _promotionRestService
+
   def stockRestService: ProductStockRestService[F] = _stockRestService
 
   private lazy val _productRestService: ProductRestService[F] =
     new ProductRestService[F](
       productAlgebra = productAlgebra
+    )
+
+  private lazy val _categoryRestService: CategoryRestService[F] =
+    new CategoryRestService[F](
+      categoryAlgebra = categoryAlgebra
+    )
+
+  private lazy val _promotionRestService: PromotionRestService[F] =
+    new PromotionRestService[F](
+      promotionAlgebra = promotionAlgebra
     )
 
   private lazy val _stockRestService: ProductStockRestService[F] =
@@ -34,6 +48,8 @@ trait ModuleProductServiceAsync[F[_]] {
     NonEmptyList
       .of(
         productRestService.service,
+        categoryRestService.service,
+        promotionRestService.service,
         stockRestService.service,
       )
       .reduceK

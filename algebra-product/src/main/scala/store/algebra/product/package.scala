@@ -31,5 +31,5 @@ package object product {
   object AddedAt extends PhantomType[LocalDateTime]
   type AddedAt = AddedAt.Type
 
-  type ModuleProductAlgebra[F[_]] = ProductAlgebra[F] with ProductStockAlgebra[F]
+  type ModuleProductAlgebra[F[_]] = ProductAlgebra[F] with CategoryAlgebra[F] with PromotionAlgebra[F] with ProductStockAlgebra[F]
 }

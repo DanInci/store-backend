@@ -19,6 +19,10 @@ trait ModuleProductAsync[F[_]] { this: ModuleContentAsync[F] =>
 
   def productAlgebra: ProductAlgebra[F] = _moduleAlgebra
 
+  def categoryAlgebra: CategoryAlgebra[F] = _moduleAlgebra
+
+  def promotionAlgebra: PromotionAlgebra[F] = _moduleAlgebra
+
   def stockAlgebra: ProductStockAlgebra[F] = _moduleAlgebra
 
   private lazy val _moduleAlgebra: ModuleProductAlgebra[F] =

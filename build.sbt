@@ -11,7 +11,7 @@ lazy val `store-server` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
   .settings(
-    mainClass := Option("store.server.StoreServerApp")
+    mainClass := Some("store.server.StoreServerApp")
   )
   .aggregate(
     `service-order`,

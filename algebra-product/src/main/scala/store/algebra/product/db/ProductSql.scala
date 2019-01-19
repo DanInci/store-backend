@@ -1,6 +1,8 @@
 package store.algebra.product.db
 
 import java.time.LocalDateTime
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 import store.core._
 import doobie._
@@ -88,6 +90,10 @@ object ProductSql extends ProductComposites {
         .withUniqueGeneratedKeys("product_id")
     }
 
+  def updateProductById(productId: ProductID,
+                        updates: StoreProductDefinition): ConnectionIO[Int] =
+    sql"UPDATE product SET c_category_id=${updates.categoryId}, name=${updates.name}, price=${updates.price}, discount=${updates.discount}, availability_on_command=${updates.isAvailableOnCommand}, description=${updates.description}, care=${updates.care} WHERE product_id=$productId".update.run
+
   def findById(productId: ProductID): ConnectionIO[Option[StoreProductDB]] =
     sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
@@ -96,49 +102,45 @@ object ProductSql extends ProductComposites {
       .query[StoreProductDB]
       .option
 
-  def findNextByCurrentId(
-      currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
-         | FROM product p
-         | INNER JOIN category ca ON p.c_category_id = ca.category_id
-         | WHERE p.product_id > $currentProductId
-         | ORDER BY p.product_id ASC
-         | LIMIT 1""".stripMargin
+  def findNextByAddedAt(addedAt: LocalDateTime,
+                        name: Option[String],
+                        age: Option[Int],
+                        categories: List[CategoryID]): ConnectionIO[Option[StoreProductDB]] = {
+    val whereClause = getWhereClause(name, age, None, Some(addedAt), categories)
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+          | FROM product p
+          | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
+      ++ Fragment.const(whereClause) ++
+      sql"""| ORDER BY p.added_at DESC
+            | LIMIT 1""".stripMargin)
       .query[StoreProductDB]
       .option
+  }
 
-  def findPreviousByCurrentId(
-      currentProductId: ProductID): ConnectionIO[Option[StoreProductDB]] =
-    sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
+
+  def findPreviousByAddedAt(addedAt: LocalDateTime,
+                            name: Option[String],
+                            age: Option[Int],
+                            categories: List[CategoryID]): ConnectionIO[Option[StoreProductDB]] = {
+    val whereClause = getWhereClause(name, age, Some(addedAt), None, categories)
+    (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
          | FROM product p
-         | INNER JOIN category ca ON p.c_category_id = ca.category_id
-         | WHERE p.product_id < $currentProductId
-         | ORDER BY p.product_id DESC
-         | LIMIT 1""".stripMargin
+         | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
+      ++ Fragment.const(whereClause) ++
+         sql"""| ORDER BY p.added_at ASC
+               | LIMIT 1""".stripMargin)
       .query[StoreProductDB]
       .option
+  }
 
-  def findByNameAndCategoriesOrderedByAddedAtDesc(
+
+  def findProductsOrderedByAddedAtDesc(
       name: Option[String],
+      age: Option[Int],
       categories: List[CategoryID],
       offset: PageOffset,
       limit: PageLimit): ConnectionIO[List[StoreProductDB]] = {
-    val whereClause = {
-      val nameFilter = name.map(n => s"UPPER(p.name) LIKE UPPER('$n%')")
-      val categoriesFilter = categories match {
-        case Nil => None
-        case c =>
-          Some(
-            s"ca.category_id IN ${c.map(v => s"'$v'").mkString_("(", ",", ")")}")
-      }
-
-      (nameFilter, categoriesFilter) match {
-        case (Some(n), Some(c)) => s"WHERE $n AND $c"
-        case (Some(n), None)    => s"WHERE $n"
-        case (None, Some(c))    => s"WHERE $c"
-        case (None, None)       => ""
-      }
-    }
+    val whereClause = getWhereClause(name, age, None, None, categories)
 
     (sql"""SELECT p.product_id, p.name, p.price, p.discount, p.availability_on_command, p.description, p.care, p.added_at, ca.category_id, ca.name, ca.sex
           | FROM product p
@@ -150,28 +152,14 @@ object ProductSql extends ProductComposites {
       .to[List]
   }
 
-  def countByNameAndCategories(
+  def countProducts(
       name: Option[String],
+      age: Option[Int],
       categories: List[CategoryID]): ConnectionIO[Count] = {
-    val whereClause = {
-      val nameFilter = name.map(n => s"UPPER(p.name) LIKE UPPER('$n%')")
-      val categoriesFilter = categories match {
-        case Nil => None
-        case c =>
-          Some(
-            s"p.c_category_id IN ${c.map(v => s"'$v'").mkString_("(", ",", ")")}")
-      }
-
-      (nameFilter, categoriesFilter) match {
-        case (Some(n), Some(c)) => s"WHERE $n AND $c"
-        case (Some(n), None)    => s"WHERE $n"
-        case (None, Some(c))    => s"WHERE $c"
-        case (None, None)       => ""
-      }
-    }
-
+    val whereClause = getWhereClause(name, age, None, None, categories)
     (sql"""SELECT COUNT(*)
-          | FROM product p """.stripMargin
+          | FROM product p
+          | INNER JOIN category ca ON p.c_category_id = ca.category_id """.stripMargin
       ++ Fragment.const(whereClause))
       .query[Count]
       .unique
@@ -226,4 +214,48 @@ object ProductSql extends ProductComposites {
   def deleteStockByProductIDAndSize(productId: ProductID,
                                     size: ProductSize): ConnectionIO[Int] =
     sql"DELETE FROM stock WHERE p_product_id=$productId AND product_size=$size".update.run
+
+  private def getWhereClause(name: Option[String],
+                             age: Option[Int],
+                             addedAfter: Option[LocalDateTime],
+                             addedBefore: Option[LocalDateTime],
+                             categories: List[CategoryID]): String = {
+    val nameFilter = name.map(n => s"UPPER(p.name) LIKE UPPER('$n%')")
+    val ageFilter = age.flatMap(count => {
+      val currentDate = LocalDate.now().atStartOfDay()
+      val referenceTime = currentDate.minusMonths(count.toLong)
+      if (addedAfter.isDefined && addedAfter.get.isAfter(referenceTime)) {
+        None
+      } else {
+        val formattedDate =
+          referenceTime.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
+        Some(s"p.added_at >= '$formattedDate'")
+      }
+    })
+    val addedAfterFilter = addedAfter.map(time => {
+      val formattedTime = time.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
+      s"p.added_at > '$formattedTime'"
+    })
+    val addedBeforeFilter = addedBefore.map(time => {
+      val formattedTime = time.format(DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:ss.SSS"))
+      s"p.added_at < '$formattedTime'"
+    })
+    val categoriesFilter = categories match {
+      case Nil => None
+      case c =>
+        Some(
+          s"ca.category_id IN ${c.map(v => s"'$v'").mkString_("(", ",", ")")}")
+    }
+
+    val filterList = List(nameFilter,
+                          ageFilter,
+                          addedAfterFilter,
+                          addedBeforeFilter,
+                          categoriesFilter)
+    filterList.filter(_.isDefined).flatten match {
+      case Nil                => ""
+      case l if l.length == 1 => s"WHERE ${l.head}"
+      case l if l.length >= 2 => s"WHERE ${l.mkString_("", " AND ", "")}"
+    }
+  }
 }

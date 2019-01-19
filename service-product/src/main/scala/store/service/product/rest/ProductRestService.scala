@@ -3,14 +3,11 @@ package store.service.product.rest
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
-import store.algebra.content.ContentID
-import store.algebra.content.entity.Content
 import store.algebra.product._
 import store.effects._
 import store.algebra.product.entity.StoreProductDefinition
-import store.algebra.product.entity.component._
 import store.core._
-import store.core.entity.PagingInfo
+import store.core.entity._
 import store.http._
 
 /**
@@ -26,59 +23,14 @@ final class ProductRestService[F[_]](
 
   private object ProductNameMatcher
       extends OptionalQueryParamDecoderMatcher[String]("name")
+  private object ProductMonthsAgeMatcher
+      extends OptionalQueryParamDecoderMatcher[Int]("age")
   private object ProductCategoryMatcher
       extends OptionalMultiQueryParamDecoderMatcher[Int]("c")
-  private object SexMatcher
-      extends OptionalQueryParamDecoderMatcher[String]("s")
   private object PageOffsetMatcher
       extends OptionalQueryParamDecoderMatcher[PageOffset]("offset")
   private object PageLimitMatcher
       extends OptionalQueryParamDecoderMatcher[PageLimit]("limit")
-
-  private val categoryService: HttpService[F] = HttpService[F] {
-    case GET -> Root / "category" :? SexMatcher(s) =>
-      for {
-        categories <- s.map(Sex.fromString).sequence match {
-          case Left(a)  => F.raiseError[List[Category]](a.asThrowable)
-          case Right(s) => productAlgebra.getCategories(s)
-        }
-        resp <- Ok(categories)
-      } yield resp
-
-    case request @ POST -> Root / "category" =>
-      for {
-        category <- request.as[CategoryDefinition]
-        categoryId <- productAlgebra.createCategory(category)
-        resp <- Created(categoryId)
-      } yield resp
-
-    case DELETE -> Root / "category" / IntVar(categoryId) =>
-      for {
-        _ <- productAlgebra.removeCategory(CategoryID(categoryId))
-        resp <- Ok()
-      } yield resp
-  }
-
-  private val promotionService: HttpService[F] = HttpService[F] {
-    case GET -> Root / "promotion" =>
-      for {
-        promotions <- productAlgebra.getPromotions
-        resp <- Ok(promotions)
-      } yield resp
-
-    case request @ POST -> Root / "promotion" =>
-      for {
-        content <- request.as[Content]
-        promotionId <- productAlgebra.createPromotion(content)
-        resp <- Created(promotionId)
-      } yield resp
-
-    case DELETE -> Root / "promotion" / promotionId =>
-      for {
-        _ <- productAlgebra.removePromotion(ContentID(promotionId))
-        resp <- Ok()
-      } yield resp
-  }
 
   private val productService: HttpService[F] = HttpService[F] {
     case GET -> Root / "product" / LongVar(productId) =>
@@ -87,29 +39,52 @@ final class ProductRestService[F[_]](
         resp <- Ok(product)
       } yield resp
 
-    case GET -> Root / "product" / LongVar(productId) / "navigation" =>
+    case GET -> Root / "product" / LongVar(productId) / "navigation" :? ProductNameMatcher(
+          name) +& ProductCategoryMatcher(categories) +& ProductMonthsAgeMatcher(
+          age) =>
+      val checkedName = name.filterNot(
+        n =>
+          n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n
+            .contains("UPDATE"))
       for {
-        product <- productAlgebra.getProductNavigation(ProductID(productId))
+        monthsAge <- getMonthsAge(age)
+        product <- productAlgebra.getProductNavigation(
+          ProductID(productId),
+          checkedName,
+          categories.toOption.getOrElse(Nil).map(CategoryID.apply),
+          monthsAge)
         resp <- Ok(product)
       } yield resp
 
     case GET -> Root / "product" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
-          categories) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
-      val checkedName = name.filterNot(n => n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n.contains("UPDATE"))
+          categories) +& ProductMonthsAgeMatcher(age) +& PageOffsetMatcher(
+          offset) +& PageLimitMatcher(limit) =>
+      val checkedName = name.filterNot(
+        n =>
+          n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n
+            .contains("UPDATE"))
       for {
+        monthsAge <- getMonthsAge(age)
         products <- productAlgebra.getProducts(
           checkedName,
           categories.toOption.getOrElse(Nil).map(CategoryID.apply),
+          monthsAge,
           PagingInfo(offset, limit))
         resp <- Ok(products)
       } yield resp
 
-    case GET -> Root / "product" / "count" :? ProductNameMatcher(name) +& ProductCategoryMatcher(categories) =>
-      val checkedName = name.filterNot(n => n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n.contains("UPDATE"))
+    case GET -> Root / "product" / "count" :? ProductNameMatcher(name) +& ProductCategoryMatcher(
+          categories) +& ProductMonthsAgeMatcher(age) =>
+      val checkedName = name.filterNot(
+        n =>
+          n.contains("'") || n.contains("DELETE") || n.contains("SELECT") || n
+            .contains("UPDATE"))
       for {
-          count <- productAlgebra.getProductsCount(
+        monthsAge <- getMonthsAge(age)
+        count <- productAlgebra.getProductsCount(
           checkedName,
-          categories.toOption.getOrElse(Nil).map(CategoryID.apply))
+          categories.toOption.getOrElse(Nil).map(CategoryID.apply),
+          monthsAge)
         resp <- Ok(count)
       } yield resp
 
@@ -127,13 +102,19 @@ final class ProductRestService[F[_]](
       } yield resp
   }
 
-  val service: HttpService[F] = {
-    NonEmptyList
-      .of(
-        categoryService,
-        productService,
-        promotionService
-      )
-      .reduceK
+  private def getMonthsAge(age: Option[Int]): F[Option[MonthsAge]] = {
+    if (age.isDefined) {
+      val monthsAge = MonthsAge(age.get)
+      if (monthsAge.isRight) {
+        F.pure(Some(monthsAge.unsafeGet()))
+      } else {
+        F.raiseError(monthsAge.left.get asThrowable)
+      }
+    } else {
+      F.pure[Option[MonthsAge]](None)
+    }
   }
+
+  val service: HttpService[F] = productService
+
 }

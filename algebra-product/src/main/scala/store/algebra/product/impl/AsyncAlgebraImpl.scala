@@ -1,5 +1,7 @@
 package store.algebra.product.impl
 
+import java.time.{LocalDate, LocalDateTime}
+
 import busymachines.core._
 import cats.implicits._
 import doobie._
@@ -26,6 +28,8 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     val transactor: Transactor[F],
     val dbContext: DatabaseContext[F]
 ) extends ProductAlgebra[F]
+    with CategoryAlgebra[F]
+    with PromotionAlgebra[F]
     with ProductStockAlgebra[F]
     with DatabaseAlgebra[F]
     with BlockingAlgebra[F] {
@@ -95,17 +99,53 @@ final private[product] class AsyncAlgebraImpl[F[_]](
   } /*_*/
 
   /*_*/
+  override def updateProduct(productId: ProductID,
+                             updates: StoreProductDefinition): F[ProductID] =
+    for {
+      productId <- transact {
+        for {
+          product <- findById(productId).flatMap(
+            exists(_, NotFoundFailure(s"Product not found with id $productId")))
+          _ <- findCategoryById(updates.categoryId).flatMap(
+            exists(
+              _,
+              InvalidInputFailure(
+                s"Cateogory with id ${updates.categoryId} does not exist")))
+          _ <- updateProductById(productId, updates)
+        } yield product.productId
+      }
+      contentIds <- updates.images
+        .map(
+          checkAndSaveContent(_,
+                              Path(s"product/$productId"),
+                              isPromotion = false))
+        .sequence
+      _ <- transact {
+        for {
+          _ <- contentIds
+            .map(cid => mapContentToProduct(cid, productId))
+            .sequence
+          _ <- updates.stocks
+            .map(s => addStockToProduct(s, productId))
+            .sequence
+        } yield ()
+      }
+    } yield productId
+  /*_*/
+
+  /*_*/
   override def getProducts(nameFilter: Option[String],
                            categoryFilter: List[CategoryID],
+                           ageFilter: Option[MonthsAge],
                            pagingInfo: PagingInfo): F[List[StoreProduct]] = {
     for {
       productsDB <- transact {
         for {
-          productsDb <- findByNameAndCategoriesOrderedByAddedAtDesc(
-            nameFilter,
-            categoryFilter,
-            pagingInfo.offset,
-            pagingInfo.limit)
+          productsDb <- findProductsOrderedByAddedAtDesc(nameFilter,
+                                                         ageFilter.map(_.age),
+                                                         categoryFilter,
+                                                         pagingInfo.offset,
+                                                         pagingInfo.limit)
           stocksList <- productsDb
             .map(
               p => findStocksByProductID(p.productId)
@@ -127,11 +167,14 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     } yield products
   } /*_*/
 
-  override def getProductsCount(nameFilter: Option[String], categoryFilter: List[CategoryID]): F[Count] = transact {
-    for {
-      count <- countByNameAndCategories(nameFilter, categoryFilter)
-    } yield count
-  }
+  override def getProductsCount(nameFilter: Option[String],
+                                categoryFilter: List[CategoryID],
+                                ageFilter: Option[MonthsAge]): F[Count] =
+    transact {
+      for {
+        count <- countProducts(nameFilter, ageFilter.map(_.age), categoryFilter)
+      } yield count
+    }
 
   override def getProduct(productId: ProductID): F[StoreProduct] = {
     for {
@@ -224,41 +267,54 @@ final private[product] class AsyncAlgebraImpl[F[_]](
   override def createPromotion(content: Content): F[ContentID] =
     checkAndSaveContent(content, Path(s"promotion"), isPromotion = true)
 
-  override def removePromotion(contentId: ContentID): F[Unit] =
+  override def removeContent(contentId: ContentID): F[Unit] =
     for {
       id <- transact {
         for {
-          allPromotions <- findPromotionContent
-          maybePromotion = allPromotions.find(_.contentId.contains(contentId))
-          promotion <- exists(
-            maybePromotion,
-            NotFoundFailure(
-              s"Promotional content with $contentId was not found"))
-          _ <- deleteContentByID(promotion.contentId)
-        } yield promotion.contentId
+          contentDB <- findContentByID(contentId).flatMap(
+            exists(_, NotFoundFailure(s"Content not found wih id $contentId")))
+          _ <- deleteContentByID(contentDB.contentId)
+        } yield contentDB.contentId
       }
       _ <- contentStorageAlgebra.removeContent(id)
     } yield ()
 
   /*_*/
   override def getProductNavigation(
-      currentProductId: ProductID): F[ProductNavigation] =
+      currentProductId: ProductID,
+      nameFilter: Option[String],
+      categoryFilter: List[CategoryID],
+      ageFilter: Option[MonthsAge]): F[ProductNavigation] =
     for {
       (previous, current, next) <- transact {
         for {
-          current <- findById(currentProductId).flatMap(
-            exists(_,
-                   NotFoundFailure(
-                     s"Product with id $currentProductId was not found")))
-          currentStocks <- findStocksByProductID(current.productId)
-          previous: Option[StoreProduct] <- findPreviousByCurrentId(
-            currentProductId).flatMap(_.map(fillStoreProductDBInfo).sequence)
-          next: Option[StoreProduct] <- findNextByCurrentId(currentProductId)
-            .flatMap(_.map(fillStoreProductDBInfo).sequence)
-        } yield
-          (previous,
-           StoreProduct.fromStoreProductDB(current, currentStocks),
-           next)
+          current <- findById(currentProductId)
+            .flatMap(
+              exists(_,
+                     NotFoundFailure(
+                       s"Product with id $currentProductId was not found")))
+            .flatMap(fillStoreProductDBInfo)
+          maybePrevious <- findPreviousByAddedAt(current.addedAt,
+                                                 nameFilter,
+                                                 ageFilter.map(_.age),
+                                                 categoryFilter)
+          previous <- maybePrevious match {
+            case Some(p) =>
+              AsyncConnectionIO.pure[Option[StoreProductDB]](Some(p))
+            case None => getLastProduct(nameFilter, categoryFilter, ageFilter)
+          }
+          previous <- previous.map(fillStoreProductDBInfo).sequence
+          maybeNext <- findNextByAddedAt(current.addedAt,
+                                         nameFilter,
+                                         ageFilter.map(_.age),
+                                         categoryFilter)
+          next <- maybeNext match {
+            case Some(n) =>
+              AsyncConnectionIO.pure[Option[StoreProductDB]](Some(n))
+            case None => getFirstProduct(nameFilter, categoryFilter)
+          }
+          next <- next.map(fillStoreProductDBInfo).sequence
+        } yield (previous, current, next)
       }
       current <- getContentByProductId(current.productId, loadBytes = false)
         .map(images => current.copy(images = images))
@@ -267,13 +323,35 @@ final private[product] class AsyncAlgebraImpl[F[_]](
           getContentByProductId(p.productId, loadBytes = false).map(images =>
             p.copy(images = images)))
         .sequence
-      previous <- previous
+      next <- next
         .map(n =>
           getContentByProductId(n.productId, loadBytes = false).map(images =>
             n.copy(images = images)))
         .sequence
     } yield ProductNavigation(previous, current, next)
   /*_*/
+
+  private def getLastProduct(
+      nameFilter: Option[String],
+      categoryFilter: List[CategoryID],
+      ageFilter: Option[MonthsAge]): ConnectionIO[Option[StoreProductDB]] =
+    ageFilter match {
+      case Some(filter) =>
+        val currentDate = LocalDate.now().atStartOfDay()
+        val referenceTime = currentDate.minusMonths(filter.age.toLong)
+        findPreviousByAddedAt(referenceTime, nameFilter, None, categoryFilter)
+      case None =>
+        val startOfTime = LocalDate.of(2000, 1, 1).atStartOfDay()
+        findPreviousByAddedAt(startOfTime, nameFilter, None, categoryFilter)
+    }
+
+  private def getFirstProduct(
+      nameFilter: Option[String],
+      categoryFilter: List[CategoryID]
+  ): ConnectionIO[Option[StoreProductDB]] = {
+    val now = LocalDateTime.now()
+    findNextByAddedAt(now, nameFilter, None, categoryFilter)
+  }
 
   private def checkAndSaveContent(content: Content,
                                   path: Path,
