@@ -44,21 +44,21 @@ object ProductSql extends ProductComposites {
 
   // CONTENT QUERIES
   def insertContent(contentDB: ContentDB): ConnectionIO[Int] =
-    sql"INSERT INTO content (content_id, name, format, is_promotion_image) VALUES (${contentDB.contentId}, ${contentDB.name}, ${contentDB.format}, ${contentDB.isPromotionImage})".update.run
+    sql"INSERT INTO content (content_id, name, format, has_thumbnail, is_promotion_image) VALUES (${contentDB.contentId}, ${contentDB.name}, ${contentDB.format}, ${contentDB.hasThumbnail}, ${contentDB.isPromotionImage})".update.run
 
   def findContentByID(id: ContentID): ConnectionIO[Option[ContentDB]] =
-    sql"SELECT content_id, name, format, is_promotion_image FROM content WHERE content_id=$id"
+    sql"SELECT content_id, name, format, has_thumbnail, is_promotion_image FROM content WHERE content_id=$id"
       .query[ContentDB]
       .option
 
   def findPromotionContent: ConnectionIO[List[ContentDB]] =
-    sql"SELECT content_id, name, format, is_promotion_image FROM content WHERE is_promotion_image=true"
+    sql"SELECT content_id, name, format, has_thumbnail, is_promotion_image FROM content WHERE is_promotion_image=true"
       .query[ContentDB]
       .to[List]
 
   def findContentsByProductID(
       productId: ProductID): ConnectionIO[List[ContentDB]] = {
-    sql"""SELECT c.content_id, c.name, c.format, c.is_promotion_image
+    sql"""SELECT c.content_id, c.name, c.format, c.has_thumbnail, c.is_promotion_image
          | FROM content c
          | INNER JOIN product_content_map pcmap ON c.content_id = pcmap.c_content_id
          | WHERE pcmap.p_product_id=$productId""".stripMargin

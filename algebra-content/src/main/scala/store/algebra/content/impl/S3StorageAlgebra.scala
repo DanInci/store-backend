@@ -63,9 +63,7 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
     } yield content
   }
 
-  override def saveContent(path: Path,
-                           format: Format,
-                           content: BinaryContent): F[ContentID] = block {
+  override def saveContent(path: Path, format: Format, content: BinaryContent): F[ContentID] = block {
     for {
       client <- _s3Client
       uuid <- F.delay(UUID.randomUUID)
@@ -87,6 +85,28 @@ final class S3StorageAlgebra[F[_]](config: S3StorageConfig)(
         .void
       contentIdIdWithBucket = ContentID(config.bucketName + "/" + contentId)
     } yield contentIdIdWithBucket
+  }
+
+  override def saveContent(contentId: ContentID, content: BinaryContent): F[ContentID] = block {
+    for {
+      client <- _s3Client
+      inputStream = new ByteArrayInputStream(content)
+      metaData = {
+        val x = new ObjectMetadata()
+        x.setContentLength(content.length.toLong)
+        x
+      }
+      contentIdWithoutBucket = contentId.dropWhile(_ != '/').drop(1)
+      request = new PutObjectRequest(
+        config.bucketName,
+        contentIdWithoutBucket,
+        inputStream,
+        metaData).withCannedAcl(CannedAccessControlList.PublicRead)
+      _ <- F
+        .delay(client.putObject(request))
+        .handleErrorWith(amazonServiceErrorHandler)
+        .void
+    } yield contentId
   }
 
   override def removeContent(id: ContentID): F[Unit] = block {

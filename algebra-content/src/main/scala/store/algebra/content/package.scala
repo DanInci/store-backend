@@ -1,5 +1,6 @@
 package store.algebra
 
+
 import store.core.PhantomType
 
 /**

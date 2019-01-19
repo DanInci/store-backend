@@ -11,5 +11,6 @@ final case class ContentDB(
     contentId: ContentID,
     name: String,
     format: Format,
+    hasThumbnail: Boolean,
     isPromotionImage: Boolean
 )

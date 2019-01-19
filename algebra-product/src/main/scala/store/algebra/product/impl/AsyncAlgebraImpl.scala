@@ -1,21 +1,24 @@
 package store.algebra.product.impl
 
+import java.io.ByteArrayInputStream
 import java.time.{LocalDate, LocalDateTime}
 
 import busymachines.core._
 import cats.implicits._
+import com.sksamuel.scrimage.{Image, ImageParseException}
 import doobie._
 import doobie.implicits._
 import store.effects._
 import store.db._
 import store.algebra.content._
-import store.algebra.content.entity.Content
+import store.algebra.content.entity.{Content, Format}
 import store.algebra.product.entity._
 import store.algebra.product._
 import store.algebra.product.db.entity._
 import store.algebra.product.entity.component._
 import store.core._
 import store.core.entity._
+import com.sksamuel.scrimage.nio.JpegWriter
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -269,14 +272,23 @@ final private[product] class AsyncAlgebraImpl[F[_]](
 
   override def removeContent(contentId: ContentID): F[Unit] =
     for {
-      id <- transact {
+      contentDB <- transact {
         for {
           contentDB <- findContentByID(contentId).flatMap(
             exists(_, NotFoundFailure(s"Content not found wih id $contentId")))
           _ <- deleteContentByID(contentDB.contentId)
-        } yield contentDB.contentId
+        } yield contentDB
       }
-      _ <- contentStorageAlgebra.removeContent(id)
+      _ <- contentStorageAlgebra.removeContent(contentDB.contentId)
+      _ <- if (contentDB.hasThumbnail) {
+        val withoutFormat =
+          contentDB.contentId.dropRight(contentDB.format.formatStr.length)
+        val thumbnailContentId =
+          s"${withoutFormat}_thumbnail.${contentDB.format}"
+        contentStorageAlgebra.removeContent(ContentID(thumbnailContentId))
+      } else {
+        F.unit
+      }
     } yield ()
 
   /*_*/
@@ -368,17 +380,57 @@ final private[product] class AsyncAlgebraImpl[F[_]](
         )
       case Right(binary) =>
         for {
+          image <- if (isPromotion) {
+            processImage(binary, 1920, 1080)
+          } else {
+            processImage(binary, 545, 815)
+          }
           contentId <- contentStorageAlgebra.saveContent(path,
-                                                         content.format,
-                                                         binary)
+                                                         Format.JPEG,
+                                                         image)
+          _ <- if (content.hasThumbnail) {
+            processImage(binary, 320, 475).flatMap(thumbnail => {
+              val withoutFormat =
+                contentId.dropRight(Format.JPEG.formatStr.length + 1)
+              val thumbnailContentId =
+                s"${withoutFormat}_thumbnail.${Format.JPEG.formatStr}"
+              contentStorageAlgebra
+                .saveContent(ContentID(thumbnailContentId), thumbnail)
+                .map(_ => ())
+            })
+          } else {
+            F.unit
+          }
           contentDB = ContentDB(contentId,
                                 content.name,
-                                content.format,
+                                Format.JPEG,
+                                content.hasThumbnail,
                                 isPromotion)
           _ <- transact(insertContent(contentDB))
         } yield contentId
 
     }
+
+  private def processImage(binary: BinaryContent,
+                           scaleWidth: Int,
+                           scaleHeight: Int): F[BinaryContent] = {
+    val imageStream = new ByteArrayInputStream(binary)
+    try {
+      val image = Image.fromStream(imageStream)
+      val scaled = image.scaleTo(scaleWidth, scaleHeight)
+      val writer = JpegWriter().withCompression(80).withProgressive(true)
+      val outputStream = scaled.stream(writer)
+      val outputImage = Stream
+        .continually(outputStream.read)
+        .takeWhile(_ != -1)
+        .map(_.toByte)
+        .toArray
+      F.pure(BinaryContent(outputImage))
+    } catch {
+      case _ : ImageParseException =>
+        F.raiseError(InvalidInputFailure(s"Image is unparsable"))
+    }
+  }
 
   private def getContentByProductId(productId: ProductID,
                                     loadBytes: Boolean): F[List[Content]] = {
@@ -390,9 +442,16 @@ final private[product] class AsyncAlgebraImpl[F[_]](
             if (loadBytes)
               contentStorageAlgebra
                 .getContent(c.contentId)
-                .map(binaryContent =>
-                  Content.fromBinary(c.name, binaryContent, c.format))
-            else F.pure(Content.fromContentID(c.name, c.contentId, c.format))
+                .map(
+                  binaryContent =>
+                    Content.fromBinary(c.name,
+                                       binaryContent,
+                                       c.format,
+                                       c.hasThumbnail))
+            else
+              F.pure(
+                Content
+                  .fromContentID(c.name, c.contentId, c.format, c.hasThumbnail))
         )
         .sequence
     } yield contents
@@ -408,8 +467,11 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     if (loadBytes)
       contentStorageAlgebra
         .getContent(c.contentId)
-        .map(binary => Content.fromBinary(c.name, binary, c.format))
-    else F.pure(Content.fromContentID(c.name, c.contentId, c.format))
+        .map(binary =>
+          Content.fromBinary(c.name, binary, c.format, c.hasThumbnail))
+    else
+      F.pure(
+        Content.fromContentID(c.name, c.contentId, c.format, c.hasThumbnail))
   }
 
   private def exists[A](value: Option[A],

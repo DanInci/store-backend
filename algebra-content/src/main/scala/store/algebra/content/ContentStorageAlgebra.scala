@@ -12,6 +12,8 @@ trait ContentStorageAlgebra[F[_]] {
 
   def saveContent(path: Path, format: Format, content: BinaryContent): F[ContentID]
 
+  def saveContent(contentId: ContentID, content: BinaryContent): F[ContentID]
+
   def removeContent(id: ContentID): F[Unit]
 
   def removeContentsFromPath(path: Path): F[Unit]

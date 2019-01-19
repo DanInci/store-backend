@@ -72,6 +72,7 @@ CREATE TABLE "content"
   content_id VARCHAR(200) NOT NULL,
 	name VARCHAR(100) NOT NULL,
 	format VARCHAR(10) NOT NULL,
+	has_thumbnail BOOLEAN NOT NULL,
 	is_promotion_image BOOLEAN NOT NULL
 );
 

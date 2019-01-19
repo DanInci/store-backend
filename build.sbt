@@ -231,7 +231,8 @@ def commonSettings: Seq[Setting[_]] = Seq(
     pureConfig,
     spire,
     betterFiles,
-    amazonSDKS3
+    amazonSDKS3,
+    scrimage
   ) ++ tsec,
   /*
    * Eliminates useless, unintuitive, and sometimes broken additions of `withFilter`
@@ -424,18 +425,18 @@ lazy val flyway = "org.flywaydb" % "flyway-core" % "4.2.0" withSources ()
 lazy val tsecV = "0.0.1-M11"
 
 lazy val tsec = Seq(
-  "io.github.jmcardon" %% "tsec-common"        % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-password"      % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-cipher-jca"    % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-common" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-password" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-cipher-jca" % tsecV withSources (),
   "io.github.jmcardon" %% "tsec-cipher-bouncy" % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-mac"           % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-signatures"    % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-hash-jca"      % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-hash-bouncy"   % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-libsodium"     % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-jwt-mac"       % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-jwt-sig"       % tsecV withSources (),
-  "io.github.jmcardon" %% "tsec-http4s"        % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-mac" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-signatures" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-hash-jca" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-hash-bouncy" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-libsodium" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-jwt-mac" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-jwt-sig" % tsecV withSources (),
+  "io.github.jmcardon" %% "tsec-http4s" % tsecV withSources (),
 )
 
 //============================================================================================
@@ -487,3 +488,6 @@ lazy val betterFiles
 
 lazy val amazonSDKS3
   : ModuleID = "com.amazonaws" % "aws-java-sdk-s3" % "1.11.396" withSources ()
+
+lazy val scrimage
+  : ModuleID = "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8" withSources ()

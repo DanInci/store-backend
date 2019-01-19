@@ -21,13 +21,22 @@ final class FileStorageAlgebra[F[_]](config: FileStorageConfig)(
 ) extends ContentStorageAlgebra[F]
     with BlockingAlgebra[F] {
 
-  override def saveContent(path: Path, format: Format, content: BinaryContent): F[ContentID] = for {
-    uuid <- F.delay(UUID.randomUUID)
-    parentDirectory = currentWorkingDirectory / config.contentFolder / path
-    file = File(parentDirectory / uuid.toString + "." + format)
-    _ <- writeContentToFile(file, content)
-    contentId = ContentID(currentWorkingDirectory.relativize(file).toString)
-  } yield contentId
+  override def saveContent(path: Path,
+                           format: Format,
+                           content: BinaryContent): F[ContentID] =
+    for {
+      uuid <- F.delay(UUID.randomUUID)
+      parentDirectory = currentWorkingDirectory / config.contentFolder / path
+      file = File(parentDirectory / uuid.toString + "." + format)
+      _ <- writeContentToFile(file, content)
+      contentId = ContentID(currentWorkingDirectory.relativize(file).toString)
+    } yield contentId
+
+  override def saveContent(contentId: ContentID, content: BinaryContent): F[ContentID] = {
+    val filePath = currentWorkingDirectory / contentId.toString
+    val file = File(filePath.toString)
+    writeContentToFile(file, content).map(_ => contentId)
+  }
 
   override def getContent(id: ContentID): F[BinaryContent] = {
     val file = File(id)
@@ -52,10 +61,11 @@ final class FileStorageAlgebra[F[_]](config: FileStorageConfig)(
     F.delay(BinaryContent(file.byteArray))
   }
 
-  private def writeContentToFile(file: File, content: BinaryContent): F[Unit] = block {
-    file.createFileIfNotExists(createParents = true)
-    F.delay(file.writeByteArray(content)).map(_ => ())
-  }
+  private def writeContentToFile(file: File, content: BinaryContent): F[Unit] =
+    block {
+      file.createFileIfNotExists(createParents = true)
+      F.delay(file.writeByteArray(content)).map(_ => ())
+    }
 }
 
 object FileStorageAlgebra {

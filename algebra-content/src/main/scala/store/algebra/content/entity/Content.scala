@@ -12,7 +12,8 @@ final case class Content(
     name: String,
     content: String,
     isBase64Encoded: Boolean,
-    format: Format
+    format: Format,
+    hasThumbnail: Boolean
 ) extends Serializable {
 
   def getContent: Either[ContentID, BinaryContent] =
@@ -23,15 +24,20 @@ final case class Content(
 
 object Content {
 
-  def fromBinary(name: String, binary: BinaryContent, format: Format): Content =
+  def fromBinary(name: String,
+                 binary: BinaryContent,
+                 format: Format,
+                 hasThumbnail: Boolean): Content =
     Content(name,
             Base64.getEncoder.encodeToString(binary),
             isBase64Encoded = true,
-            format)
+            format,
+            hasThumbnail)
 
   def fromContentID(name: String,
                     contentId: ContentID,
-                    format: Format): Content =
-    Content(name, contentId, isBase64Encoded = false, format)
+                    format: Format,
+                    hasThumbnail: Boolean): Content =
+    Content(name, contentId, isBase64Encoded = false, format, hasThumbnail)
 
 }
