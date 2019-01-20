@@ -102,6 +102,13 @@ final class ProductRestService[F[_]](
         resp <- Created(productId)
       } yield resp
 
+    case request @ PUT -> Root / "product" / LongVar(productId) =>
+      for {
+        productDefinition <- request.as[StoreProductDefinition]
+        productId <- productAlgebra.updateProduct(ProductID(productId), productDefinition)
+        resp <- Ok(productId)
+      } yield resp
+
     case DELETE -> Root / "product" / LongVar(productId) =>
       for {
         _ <- productAlgebra.removeProduct(ProductID(productId))

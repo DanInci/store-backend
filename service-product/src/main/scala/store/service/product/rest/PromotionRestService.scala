@@ -9,6 +9,8 @@ import store.algebra.product._
 import store.effects._
 import store.http._
 
+import java.util.Base64
+
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 19/01/2019
@@ -34,7 +36,8 @@ final class PromotionRestService[F[_]](
         resp <- Created(promotionId)
       } yield resp
 
-    case DELETE -> Root / "promotion" / contentId =>
+    case DELETE -> Root / "content" / base64EncodedContetId =>
+      val contentId = Base64.getDecoder.decode(base64EncodedContetId).map(_.toChar).mkString
       for {
         _ <- promotionAlgebra.removeContent(ContentID(contentId))
         resp <- Ok()
