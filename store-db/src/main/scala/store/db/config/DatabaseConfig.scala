@@ -21,6 +21,6 @@ object DatabaseConfig extends ConfigLoader[DatabaseConfig] {
   override def default[F[_]: Sync]: F[DatabaseConfig] =
     this.load[F]("store.db")
 
-  def testing[F[_]: Sync]: F[DatabaseConfig] =
-    this.load[F]("store.test")
+  def development[F[_]: Sync]: F[DatabaseConfig] =
+    this.load[F]("store.dev")
 }

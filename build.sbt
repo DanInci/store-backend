@@ -301,7 +301,9 @@ def sbtAssemblySettings: Seq[Setting[_]] = {
         case "reference.conf"                    => MergeStrategy.concat
         case x                                   => (assemblyMergeStrategy in assembly).value(x)
       },
-      //this is to avoid propagation of the assembly task to all subprojects.
+      // Output path of sbt assembly
+      assemblyOutputPath in assembly := file("target/store-backend.jar"),
+        //this is to avoid propagation of the assembly task to all subprojects.
       //changing this makes assembly incredibly slow
       aggregate in assembly := false
     )

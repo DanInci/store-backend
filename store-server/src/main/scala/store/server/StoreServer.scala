@@ -27,10 +27,11 @@ class StoreServer[F[_]: Concurrent] private (
   def init: Stream[F, (StoreServerConfig, ModuleStoreServer[F])] =
     for {
       serverConfig <- Stream.eval(StoreServerConfig.default[F])
-      dbConfig <- if (serverConfig.mode.toUpperCase() == "PRODUCTION") {
-        Stream.eval(DatabaseConfig.default[F])
+      _ <- Stream.eval(logger.info(serverConfig.mode))
+      dbConfig <- if (serverConfig.mode.toUpperCase() == "development") {
+        Stream.eval(DatabaseConfig.development[F])
       } else {
-        Stream.eval(DatabaseConfig.testing[F])
+        Stream.eval(DatabaseConfig.default[F])
       }
       filesConfig <- Stream.eval(FileStorageConfig.default[F])
       s3Config <- Stream.eval(S3StorageConfig.default)
@@ -50,7 +51,7 @@ class StoreServer[F[_]: Concurrent] private (
                    contentContext,
                    emailConfig,
                    emailContext))
-      _ <- Stream.eval(logger.info("Successfully initialized store-server"))
+      _ <- Stream.eval(logger.info(s"Successfully initialized store-server in ${serverConfig.mode.toUpperCase} mode"))
       _ <- Stream.eval(
         logger.info(
           s"Started server on ${serverConfig.host}:${serverConfig.port}"))

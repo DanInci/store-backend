@@ -1,0 +1,35 @@
+version: '3.4'
+
+services:
+  postgres:
+    image: postgres:10.4
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: clothes_store
+      POSTGRES_USER: storeuser
+      POSTGRES_PASSWORD: qwerty
+
+  build:
+    image: store-server-build:${STORE_SERVER_VERSION:-development}
+    build:
+      context: .
+      target: build-container
+
+  server:
+    image: store-server:${STORE_SERVER_VERSION:-development}
+    build:
+      context: .
+      target: server-container
+    restart: unless-stopped
+    ports:
+      - ${STORE_SERVER_PORT:-8080}:8080
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    environment:
+      SERVER_MODE: ${STORE_SERVER_MODE:-development}
+      API_ROUTE: ${STORE_SERVER_ROUTE:-}
+      JWT_SECRET: storesecret
