@@ -119,6 +119,13 @@ lazy val `algebra-product` = project
 lazy val `algebra-content` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      betterFiles,
+      amazonSDKS3,
+      scrimage
+    )
+  )
   .aggregate(
     `store-db`,
     `store-config`,
@@ -135,6 +142,11 @@ lazy val `algebra-content` = project
 lazy val `algebra-email` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      javaxMail
+    )
+  )
   .aggregate(
     `store-config`,
     `store-core`,
@@ -149,6 +161,13 @@ lazy val `algebra-email` = project
 lazy val `store-db` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      doobieHikari,
+      doobiePostgres,
+      flyway
+    )
+  )
   .dependsOn(
     `store-config`,
     `store-core`,
@@ -158,6 +177,13 @@ lazy val `store-db` = project
 lazy val `store-http` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      http4sBlazeServer,
+      http4sCirce,
+      http4sDSL,
+    )
+  )
   .dependsOn(
     `store-json`,
     `store-core`,
@@ -167,6 +193,14 @@ lazy val `store-http` = project
 lazy val `store-json` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      circeCore,
+      circeGeneric,
+      circeGenericExtras,
+      bmcJson,
+    )
+  )
   .dependsOn(
     `store-core`,
     `store-effects`
@@ -175,6 +209,14 @@ lazy val `store-json` = project
 lazy val `store-core` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      log4cats,
+      logbackClassic,
+      linebacker,
+      shapeless
+    ) ++ tsec
+  )
   .dependsOn(
     `store-effects`
   )
@@ -182,6 +224,11 @@ lazy val `store-core` = project
 lazy val `store-config` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      pureConfig
+    )
+  )
   .dependsOn(
     `store-effects`
   )
@@ -189,51 +236,21 @@ lazy val `store-config` = project
 lazy val `store-effects` = project
   .settings(commonSettings)
   .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      catsEffect,
+      catsCore,
+      bmcEffects,
+      monix,
+      fs2,
+    )
+  )
 
 //=============================================================================
 //=============================================================================
 
 def commonSettings: Seq[Setting[_]] = Seq(
   scalaVersion := "2.12.6",
-  libraryDependencies ++= Seq(
-    //utils
-    bmcCore,
-    bmcDuration,
-    linebacker,
-    //effects + streams
-    catsCore,
-    catsEffect,
-    monix,
-    fs2,
-    bmcEffects,
-    //JSON stuff
-    circeCore,
-    circeGeneric,
-    circeGenericExtras,
-    bmcJson,
-    //http4s
-    http4sBlazeServer,
-    http4sCirce,
-    http4sDSL,
-    //doobie
-    doobieHikari,
-    doobiePostgres,
-    //logging
-    log4cats,
-    logbackClassic,
-    //email
-    javaxMail,
-    //test stuff
-    doobieTK,
-    //misc
-    flyway,
-    attoParser,
-    pureConfig,
-    spire,
-    betterFiles,
-    amazonSDKS3,
-    scrimage
-  ) ++ tsec,
   /*
    * Eliminates useless, unintuitive, and sometimes broken additions of `withFilter`
    * when using generator arrows in for comprehensions. e.g.
@@ -357,16 +374,8 @@ def customScalaCompileFlags: Seq[String] = Seq(
 def bmCommons(m: String): ModuleID =
   "com.busymachines" %% s"busymachines-commons-$m" % "0.3.0-RC8"
 
-lazy val bmcCore: ModuleID = bmCommons("core") withSources ()
-lazy val bmcDuration: ModuleID = bmCommons("duration") withSources ()
 lazy val bmcEffects: ModuleID = bmCommons("effects") withSources ()
-lazy val bmcEffectsSync: ModuleID = bmCommons("effects-sync") withSources ()
-lazy val bmcEffectsSyncC
-  : ModuleID = bmCommons("effects-sync-cats") withSources ()
-lazy val bmcEffectsAsync: ModuleID = bmCommons("effects-async") withSources ()
 lazy val bmcJson: ModuleID = bmCommons("json") withSources ()
-lazy val bmcSemVer: ModuleID = bmCommons("semver") withSources ()
-lazy val bmcSemVerParsers: ModuleID = bmCommons("semver-parsers") withSources ()
 
 //============================================================================================
 //================================= http://typelevel.org/scala/ ==============================
@@ -395,8 +404,6 @@ lazy val circeGeneric: ModuleID = "io.circe" %% "circe-generic" % circeVersion
 lazy val circeGenericExtras
   : ModuleID = "io.circe" %% "circe-generic-extras" % circeVersion
 
-lazy val attoParser
-  : ModuleID = "org.tpolecat" %% "atto-core" % "0.6.2" withSources ()
 
 //https://github.com/http4s/http4s
 lazy val Http4sVersion = "0.18.12"
@@ -440,12 +447,6 @@ lazy val tsec = Seq(
 )
 
 //============================================================================================
-//==========================================  math ===========================================
-//============================================================================================
-
-lazy val spire: ModuleID = "org.typelevel" %% "spire" % "0.14.1" withSources ()
-
-//============================================================================================
 //=========================================  logging =========================================
 //============================================================================================
 //https://github.com/ChristopherDavenport/log4cats
@@ -486,8 +487,13 @@ lazy val linebacker
 lazy val betterFiles
   : ModuleID = "com.github.pathikrit" %% "better-files" % "3.6.0" withSources ()
 
+//https://github.com/aws/aws-sdk-java
 lazy val amazonSDKS3
   : ModuleID = "com.amazonaws" % "aws-java-sdk-s3" % "1.11.396" withSources ()
 
+//https://github.com/sksamuel/scrimage
 lazy val scrimage
   : ModuleID = "com.sksamuel.scrimage" %% "scrimage-core" % "2.1.8" withSources ()
+
+//https://github.com/milessabin/shapeless
+lazy val shapeless: ModuleID = "com.chuusai" %% "shapeless" % "2.3.3" withSources()

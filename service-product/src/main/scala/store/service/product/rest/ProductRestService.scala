@@ -10,6 +10,8 @@ import store.core._
 import store.core.entity._
 import store.http._
 
+import scala.language.postfixOps
+
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
   * @since 04/08/2018
