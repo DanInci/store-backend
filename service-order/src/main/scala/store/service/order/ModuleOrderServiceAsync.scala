@@ -3,6 +3,7 @@ package store.service.order
 import cats.data.NonEmptyList
 import org.http4s.HttpService
 import store.algebra.email.ModuleEmailConcurrent
+import store.algebra.httpsec.AuthCtxService
 import store.algebra.order.ModuleOrderAsync
 import store.service.order.rest.{ContactRestService, OrderRestService}
 
@@ -14,6 +15,8 @@ trait ModuleOrderServiceAsync[F[_]] {
   this: ModuleOrderAsync[F] with ModuleEmailConcurrent[F] =>
 
   def orderModuleService: HttpService[F] = _service
+
+  def orderModuleAuthedService: AuthCtxService[F] = _authedService
 
   def orderRestService: OrderRestService[F] = _orderRestService
 
@@ -39,5 +42,8 @@ trait ModuleOrderServiceAsync[F[_]] {
       )
       .reduceK
   }
+
+  private lazy val _authedService: AuthCtxService[F] =
+    orderRestService.authedService
 
 }

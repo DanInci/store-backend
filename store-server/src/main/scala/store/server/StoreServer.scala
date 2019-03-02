@@ -7,12 +7,10 @@ import store.db._
 import doobie.util.transactor.Transactor
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 import monix.execution.Scheduler
-import store.algebra.content.{
-  ContentContext,
-  FileStorageConfig,
-  S3StorageConfig
-}
-import store.algebra.email.{EmailConfig, EmailContext}
+import store.algebra.auth.AuthConfig
+import store.algebra.content._
+import store.algebra.email._
+import tsec.mac.jca._
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -35,6 +33,8 @@ class StoreServer[F[_]: Concurrent] private (
       }
       filesConfig <- Stream.eval(FileStorageConfig.default[F])
       s3Config <- Stream.eval(S3StorageConfig.default)
+      authConfig <- Stream.eval(AuthConfig.default[F])
+      jwtKey <- Stream.eval(HMACSHA256.generateKey[F])
       emailConfig <- Stream.eval(EmailConfig.default)
       transactor <- Stream.eval(DatabaseConfigAlgebra.transactor[F](dbConfig))
       nrOfMigs <- Stream.eval(
@@ -49,9 +49,12 @@ class StoreServer[F[_]: Concurrent] private (
                    filesConfig,
                    s3Config,
                    contentContext,
+                   authConfig,
+                   jwtKey,
                    emailConfig,
                    emailContext))
-      _ <- Stream.eval(logger.info(s"Successfully initialized store-server in ${serverConfig.mode.toUpperCase} mode"))
+      _ <- Stream.eval(logger.info(
+        s"Successfully initialized store-server in ${serverConfig.mode.toUpperCase} mode"))
       _ <- Stream.eval(
         logger.info(
           s"Started server on ${serverConfig.host}:${serverConfig.port}"))
@@ -63,17 +66,20 @@ class StoreServer[F[_]: Concurrent] private (
       filesConfig: FileStorageConfig,
       s3Config: S3StorageConfig,
       contentContext: ContentContext[F],
+      authConfig: AuthConfig,
+      key: MacSigningKey[HMACSHA256],
       emailConfig: EmailConfig,
       emailContext: EmailContext[F]): F[ModuleStoreServer[F]] =
     Concurrent
       .apply[F]
       .delay(
-        ModuleStoreServer.concurrent(filesConfig, s3Config, emailConfig)(
-          implicitly,
-          transactor,
-          dbContext,
-          contentContext,
-          emailContext))
+        ModuleStoreServer
+          .concurrent(filesConfig, s3Config, authConfig, key, emailConfig)(
+            implicitly,
+            transactor,
+            dbContext,
+            contentContext,
+            emailContext))
 
 }
 

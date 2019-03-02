@@ -3,6 +3,7 @@ package store.service.product.rest
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
+import store.algebra.httpsec.AuthCtxService
 import store.algebra.product._
 import store.algebra.product.entity.component._
 import store.effects._
@@ -31,15 +32,17 @@ final class CategoryRestService[F[_]](
         }
         resp <- Ok(categories)
       } yield resp
+  }
 
-    case request @ POST -> Root / "category" =>
+  private val authedCategoryService: AuthCtxService[F] = AuthCtxService[F] {
+    case (request @ POST -> Root / "category") as _  =>
       for {
         category <- request.as[CategoryDefinition]
         categoryId <- categoryAlgebra.createCategory(category)
         resp <- Created(categoryId)
       } yield resp
 
-    case DELETE -> Root / "category" / IntVar(categoryId) =>
+    case DELETE -> Root / "category" / IntVar(categoryId) as _ =>
       for {
         _ <- categoryAlgebra.removeCategory(CategoryID(categoryId))
         resp <- Ok()
@@ -47,5 +50,7 @@ final class CategoryRestService[F[_]](
   }
 
   val service: HttpService[F] = categoryService
+
+  val authedService: AuthCtxService[F] = authedCategoryService
 
 }

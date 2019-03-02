@@ -8,8 +8,9 @@ import store.algebra.content.entity.Content
 import store.algebra.product._
 import store.effects._
 import store.http._
-
 import java.util.Base64
+
+import store.algebra.httpsec.AuthCtxService
 
 /**
   * @author Daniel Incicau, daniel.incicau@busymachines.com
@@ -28,16 +29,19 @@ final class PromotionRestService[F[_]](
         promotions <- promotionAlgebra.getPromotions
         resp <- Ok(promotions)
       } yield resp
+  }
 
-    case request @ POST -> Root / "promotion" =>
+  private val authedPromotionService: AuthCtxService[F] = AuthCtxService[F] {
+    case (request @ POST -> Root / "promotion") as _ =>
       for {
         content <- request.as[Content]
         promotionId <- promotionAlgebra.createPromotion(content)
         resp <- Created(promotionId)
       } yield resp
 
-    case DELETE -> Root / "content" / base64EncodedContetId =>
-      val contentId = Base64.getDecoder.decode(base64EncodedContetId).map(_.toChar).mkString
+    case DELETE -> Root / "content" / base64EncodedContetId as _ =>
+      val contentId =
+        Base64.getDecoder.decode(base64EncodedContetId).map(_.toChar).mkString
       for {
         _ <- promotionAlgebra.removeContent(ContentID(contentId))
         resp <- Ok()
@@ -45,5 +49,7 @@ final class PromotionRestService[F[_]](
   }
 
   val service: HttpService[F] = promotionService
+
+  val authedService: AuthCtxService[F] = authedPromotionService
 
 }

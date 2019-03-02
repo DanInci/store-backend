@@ -14,6 +14,7 @@ lazy val `store-server` = project
     mainClass := Some("store.server.StoreServerApp")
   )
   .aggregate(
+    `service-user`,
     `service-order`,
     `service-product`,
     `store-config`,
@@ -24,6 +25,7 @@ lazy val `store-server` = project
     `store-effects`
   )
   .dependsOn(
+    `service-user`,
     `service-order`,
     `service-product`,
     `store-config`,
@@ -39,6 +41,7 @@ lazy val `service-order` = project
   .settings(sbtAssemblySettings)
   .aggregate(
     `algebra-order`,
+    `algebra-http-sec`,
     `store-config`,
     `store-db`,
     `store-json`,
@@ -48,8 +51,31 @@ lazy val `service-order` = project
   )
   .dependsOn(
     `algebra-order`,
+    `algebra-http-sec`,
     `store-config`,
     `store-db`,
+    `store-json`,
+    `store-http`,
+    `store-core`,
+    `store-effects`
+  )
+
+lazy val `service-user` = project
+  .settings(commonSettings)
+  .settings(sbtAssemblySettings)
+  .aggregate(
+    `algebra-auth`,
+    `algebra-http-sec`,
+    `store-config`,
+    `store-json`,
+    `store-http`,
+    `store-core`,
+    `store-effects`
+  )
+  .dependsOn(
+    `algebra-auth`,
+    `algebra-http-sec`,
+    `store-config`,
     `store-json`,
     `store-http`,
     `store-core`,
@@ -61,6 +87,7 @@ lazy val `service-product` = project
   .settings(sbtAssemblySettings)
   .aggregate(
     `algebra-product`,
+    `algebra-http-sec`,
     `store-config`,
     `store-db`,
     `store-json`,
@@ -70,6 +97,7 @@ lazy val `service-product` = project
   )
   .dependsOn(
     `algebra-product`,
+    `algebra-http-sec`,
     `store-config`,
     `store-db`,
     `store-json`,
@@ -146,6 +174,41 @@ lazy val `algebra-email` = project
     libraryDependencies ++= Seq(
       javaxMail
     )
+  )
+  .aggregate(
+    `store-config`,
+    `store-core`,
+    `store-effects`
+  )
+  .dependsOn(
+    `store-config`,
+    `store-core`,
+    `store-effects`
+  )
+
+lazy val `algebra-http-sec` = project
+  .settings(commonSettings)
+  .settings(sbtAssemblySettings)
+  .dependsOn(
+    `algebra-auth`,
+    `store-config`,
+    `store-effects`,
+    `store-core`,
+    `store-http`,
+  )
+  .aggregate(
+    `algebra-auth`,
+    `store-config`,
+    `store-effects`,
+    `store-core`,
+    `store-http`,
+  )
+
+lazy val `algebra-auth` = project
+  .settings(commonSettings)
+  .settings(sbtAssemblySettings)
+  .settings(
+    libraryDependencies ++= tsec
   )
   .aggregate(
     `store-config`,

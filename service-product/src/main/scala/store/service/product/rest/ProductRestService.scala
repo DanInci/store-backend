@@ -3,6 +3,7 @@ package store.service.product.rest
 import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
+import store.algebra.httpsec.AuthCtxService
 import store.algebra.product._
 import store.effects._
 import store.algebra.product.entity.StoreProductDefinition
@@ -96,22 +97,24 @@ final class ProductRestService[F[_]](
           isFavourite)
         resp <- Ok(count)
       } yield resp
+  }
 
-    case request @ POST -> Root / "product" =>
+  private val authedProductService: AuthCtxService[F] =  AuthCtxService[F] {
+    case (request @ POST -> Root / "product") as _ =>
       for {
         productDefinition <- request.as[StoreProductDefinition]
         productId <- productAlgebra.createProduct(productDefinition)
         resp <- Created(productId)
       } yield resp
 
-    case request @ PUT -> Root / "product" / LongVar(productId) =>
+    case (request @ PUT -> Root / "product" / LongVar(productId)) as _ =>
       for {
         productDefinition <- request.as[StoreProductDefinition]
         productId <- productAlgebra.updateProduct(ProductID(productId), productDefinition)
         resp <- Ok(productId)
       } yield resp
 
-    case DELETE -> Root / "product" / LongVar(productId) =>
+    case DELETE -> Root / "product" / LongVar(productId) as _ =>
       for {
         _ <- productAlgebra.removeProduct(ProductID(productId))
         resp <- Ok()
@@ -132,5 +135,7 @@ final class ProductRestService[F[_]](
   }
 
   val service: HttpService[F] = productService
+
+  val authedService: AuthCtxService[F] = authedProductService
 
 }

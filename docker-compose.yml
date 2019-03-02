@@ -32,4 +32,5 @@ services:
     environment:
       SERVER_MODE: ${STORE_SERVER_MODE:-development}
       API_ROUTE: ${STORE_SERVER_ROUTE:-}
-      JWT_SECRET: storesecret
+      ADMIN_USERNAME: ${STORE_SERVER_ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${STORE_SERVER_ADMIN_PASS:-password}

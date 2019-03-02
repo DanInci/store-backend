@@ -7,6 +7,7 @@ import cats.implicits._
 import org.http4s._
 import org.http4s.dsl._
 import store.algebra.email._
+import store.algebra.httpsec.AuthCtxService
 import store.algebra.order._
 import store.algebra.order.entity._
 import store.core.entity.PagingInfo
@@ -23,7 +24,8 @@ final class OrderRestService[F[_]](
     emailAlgebra: EmailAlgebra[F]
 )(
     implicit F: Async[F]
-) extends Http4sDsl[F] with OrderServiceJSON {
+) extends Http4sDsl[F]
+    with OrderServiceJSON {
 
   private object OrderCodeMatcher
       extends QueryParamDecoderMatcher[String]("code")
@@ -52,8 +54,20 @@ final class OrderRestService[F[_]](
     }
 
   private val orderService: HttpService[F] = HttpService[F] {
+    case GET -> Root / "order" / "placed" :? OrderCodeMatcher(code) =>
+      for {
+        order <- orderAlgebra.getOrder(OrderToken(code)).flatMap {
+          case Some(o) => F.pure(o)
+          case None =>
+            F.raiseError[Order](NotFoundFailure(s"Order was not found"))
+        }
+        resp <- Ok(order)
+      } yield resp
+  }
+
+  private val authedOrderService: AuthCtxService[F] = AuthCtxService[F] {
     case GET -> Root / "order" :? StartDateMatcher(startDate) +& EndDateMatcher(
-          endDate) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) =>
+          endDate) +& PageOffsetMatcher(offset) +& PageLimitMatcher(limit) as _ =>
       for {
         orders <- orderAlgebra.getOrders(
           startDate.map(StartDate.apply),
@@ -63,22 +77,12 @@ final class OrderRestService[F[_]](
         resp <- Ok(orders)
       } yield resp
 
-    case GET -> Root / "order" / LongVar(id) =>
+    case GET -> Root / "order" / LongVar(id) as _ =>
       for {
         order <- orderAlgebra.getOrder(OrderID(id)).flatMap {
           case Some(o) => F.pure(o)
           case None =>
             F.raiseError[Order](NotFoundFailure(s"Order with id $id not found"))
-        }
-        resp <- Ok(order)
-      } yield resp
-
-    case GET -> Root / "order" / "placed" :? OrderCodeMatcher(code) =>
-      for {
-        order <- orderAlgebra.getOrder(OrderToken(code)).flatMap {
-          case Some(o) => F.pure(o)
-          case None =>
-            F.raiseError[Order](NotFoundFailure(s"Order was not found"))
         }
         resp <- Ok(order)
       } yield resp
@@ -102,5 +106,7 @@ final class OrderRestService[F[_]](
       )
       .reduceK
   }
+
+  val authedService: AuthCtxService[F] = authedOrderService
 
 }

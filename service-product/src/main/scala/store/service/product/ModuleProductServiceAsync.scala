@@ -3,6 +3,7 @@ package store.service.product
 import cats.data.NonEmptyList
 import org.http4s.HttpService
 import store.algebra.content.ModuleContentAsync
+import store.algebra.httpsec.AuthCtxService
 import store.algebra.product.ModuleProductAsync
 import store.service.product.rest._
 
@@ -14,6 +15,8 @@ trait ModuleProductServiceAsync[F[_]] {
   this: ModuleProductAsync[F] with ModuleContentAsync[F] =>
 
   def productModuleService: HttpService[F] = _service
+
+  def productModuleAuthedService: AuthCtxService[F] = _authedService
 
   def productRestService: ProductRestService[F] = _productRestService
 
@@ -49,8 +52,19 @@ trait ModuleProductServiceAsync[F[_]] {
       .of(
         productRestService.service,
         categoryRestService.service,
-        promotionRestService.service,
-        stockRestService.service,
+        promotionRestService.service
+      )
+      .reduceK
+  }
+
+  private lazy val _authedService: AuthCtxService[F] = {
+    import cats.implicits._
+    NonEmptyList
+      .of(
+        productRestService.authedService,
+        categoryRestService.authedService,
+        promotionRestService.authedService,
+        stockRestService.authedService
       )
       .reduceK
   }

@@ -1,10 +1,11 @@
 package store.http
 
 import cats.implicits._
-import busymachines.core.{Anomaly, InvalidInputFailure, NotFoundFailure}
+import busymachines.core.{Anomaly, InvalidInputFailure, NotFoundFailure, UnauthorizedFailure}
 import busymachines.json.AnomalyJsonCodec
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 import org.http4s._
+import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.server.ServiceErrorHandler
 import org.http4s.util.CaseInsensitiveString
@@ -15,6 +16,14 @@ import store.effects._
   * @since 14/11/2018
   */
 object StoreErrorHandler extends Http4sCirceInstances with AnomalyJsonCodec {
+
+  private val challenges: NonEmptyList[Challenge] = NonEmptyList.of(
+    Challenge(
+      scheme = "Basic",
+      realm = "Anca Store"
+    )
+  )
+  private val wwwHeader = headers.`WWW-Authenticate`(challenges)
 
   def apply[F[_]](implicit F: Monad[F], logger: SelfAwareStructuredLogger[F]): ServiceErrorHandler[F] = req => {
     case e: InvalidInputFailure =>
@@ -29,6 +38,15 @@ object StoreErrorHandler extends Http4sCirceInstances with AnomalyJsonCodec {
           s"NotFoundFailure: ${req.method} ${req.pathInfo} from ${req.remoteAddr.getOrElse("<unknown>")}. Message: ${e.message}"
         )
         resp <- Response[F](status = Status.NotFound, httpVersion = req.httpVersion).withBody(e.asInstanceOf[Anomaly])
+      } yield resp
+    case e: UnauthorizedFailure =>
+      val fdsl = Http4sDsl[F]
+      import fdsl._
+      for {
+        _ <- logger.info(
+          s"UnauthorizedFailure: ${req.method} ${req.pathInfo} from ${req.remoteAddr.getOrElse("<unknown>")}. Message: ${e.message}"
+        )
+        resp <- Unauthorized(wwwHeader, e.asInstanceOf[Anomaly])
       } yield resp
     case mf: MessageFailure =>
       for {
