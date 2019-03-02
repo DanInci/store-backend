@@ -40,7 +40,7 @@ final class AsyncAlgebraImpl[F[_]](
   private def generateJWT(): F[AuthenticationToken] =
     for {
       claims <- JWTClaims.withDuration[F](
-        expiration = Some(30.seconds)
+        expiration = Some(30.minutes)
       )
       jwt <- JWTMac.buildToString[F, HMACSHA256](claims, jwtKey)
     } yield AuthenticationToken(jwt)
