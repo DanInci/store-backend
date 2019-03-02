@@ -441,8 +441,8 @@ final private[product] class AsyncAlgebraImpl[F[_]](
     val imageStream = new ByteArrayInputStream(binary)
     try {
       val image = Image.fromStream(imageStream)
-      val scaled = image.scaleTo(scaleWidth, scaleHeight)
-      val writer = JpegWriter().withCompression(80).withProgressive(true)
+      val scaled = image.max(scaleWidth, scaleHeight)
+      val writer = JpegWriter().withCompression(80).withProgressive(false)
       val output = scaled.bytes(writer)
       F.pure(BinaryContent(output))
     } catch {
